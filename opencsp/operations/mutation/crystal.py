@@ -93,7 +93,7 @@ class CrystalMutation(StructureOperation):
             new_lattice = Lattice.from_parameters(delta_a, delta_b, delta_c, delta_alpha, delta_beta, delta_gamma)
             
             # 更新结构
-            structure.modify_lattice(new_lattice)
+            structure.lattice = new_lattice
         else:  # ASE Atoms
             # 获取当前晶胞
             cell = structure.get_cell()
@@ -192,7 +192,7 @@ class CrystalMutation(StructureOperation):
             new_lattice = Lattice(new_matrix)
             
             # 更新结构
-            structure.modify_lattice(new_lattice)
+            structure.lattice =new_lattice
         else:  # ASE Atoms
             # 应用应变到晶胞
             cell = structure.get_cell()

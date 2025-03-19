@@ -71,6 +71,9 @@ class OpenCSP:
         self.operation_registry.register_velocity(ClusterVelocityUpdate(), 1)
         self.operation_registry.register_velocity(SurfaceVelocityUpdate(), 2)
         self.operation_registry.register_velocity(CrystalVelocityUpdate(), 3)
+        # 验证注册状态
+        #print(f"Crossover operations: {self.operation_registry.crossover_operations}")
+        #print(f"Mutation operations: {self.operation_registry.mutation_operations}")
         
     def create_calculator(self, calculator_type, **kwargs):
         """创建计算器"""
@@ -100,7 +103,12 @@ class OpenCSP:
         
     def create_runner(self, structure_generator, evaluator, optimization_config=None, **kwargs):
         """创建CSP运行器"""
-        return CSPRunner(structure_generator, evaluator, optimization_config, **kwargs)
+        return CSPRunner(structure_generator,
+                         evaluator, 
+                         optimization_config,
+                         operation_registry=self.operation_registry,  
+                         optimizer_factory=self.optimizer_factory, 
+                         **kwargs)
         
     def load_plugin(self, plugin_name, **kwargs):
         """加载插件"""

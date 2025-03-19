@@ -80,3 +80,8 @@ tox.ini
 
 sio2_ga_results
 result
+
+*log
+*.out
+*.bk
+*examples/results/*

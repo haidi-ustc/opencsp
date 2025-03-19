@@ -53,11 +53,11 @@ def get_structure_dimensionality(structure: Any) -> int:
             
             # 将pymatgen的维度映射到我们的维度表示
             if dim == 0:  # 孤立原子或小团簇
-                return 1
+                return 3
             elif dim == 1:  # 一维链
-                return 1
+                return 3
             elif dim == 2:  # 二维表面
-                return 2
+                return 3
             else:  # 三维晶体
                 return 3
         except Exception as e:
@@ -108,7 +108,7 @@ def _get_dimensionality_ase(structure: Any) -> int:
     return 1
 
 
-def calculate_structure_distance(structure1: Any, structure2: Any) -> float:
+def calculate_structure_distance1(structure1: Any, structure2: Any) -> float:
     """
     计算两个结构之间的差异度量
     
@@ -168,3 +168,61 @@ def calculate_structure_distance(structure1: Any, structure2: Any) -> float:
             
         # 计算欧氏距离
         return np.sqrt(np.sum((pos1 - pos2)**2) / len(pos1))
+
+
+import numpy as np
+from typing import Any
+
+def calculate_structure_distance(structure1: Any, structure2: Any) -> float:
+    """
+    计算两个结构之间的差异度量
+
+    Args:
+        structure1: 第一个结构
+        structure2: 第二个结构
+
+    Returns:
+        float: 结构差异度量
+    """
+    try:
+        from pymatgen.analysis.structure_matcher import StructureMatcher, FrameworkComparator
+        from pymatgen.io.ase import AseAtomsAdaptor
+
+        # 确保结构是 pymatgen 的 Structure 格式
+        if hasattr(structure1, 'get_positions'):  # ASE Atoms
+            structure1 = AseAtomsAdaptor.get_structure(structure1)
+        if hasattr(structure2, 'get_positions'):  # ASE Atoms
+            structure2 = AseAtomsAdaptor.get_structure(structure2)
+
+        # 使用框架比较器（忽略原子类型，只比较结构）
+        matcher = StructureMatcher(comparator=FrameworkComparator())
+
+        # 计算 RMS 距离
+        try:
+            rms_tuple = matcher.get_rms_dist(structure1, structure2)
+            if rms_tuple is None:
+                return 10.0  # 结构差异很大
+            return rms_tuple[0]  # 只取 RMS 距离
+        except:
+            return 10.0  # 匹配失败时返回较大值
+
+    except ImportError:
+        # 如果 pymatgen 不可用，使用欧几里得距离
+        # 获取原子位置
+        if hasattr(structure1, 'sites'):  # pymatgen Structure
+            pos1 = np.array([site.coords for site in structure1.sites])
+        else:  # ASE Atoms
+            pos1 = structure1.get_positions()
+
+        if hasattr(structure2, 'sites'):  # pymatgen Structure
+            pos2 = np.array([site.coords for site in structure2.sites])
+        else:  # ASE Atoms
+            pos2 = structure2.get_positions()
+
+        # 如果原子数不同，返回一个较大的距离
+        if len(pos1) != len(pos2):
+            return 10.0
+
+        # 计算均方根欧几里得距离
+        return np.sqrt(np.sum((pos1 - pos2) ** 2) / len(pos1))
+

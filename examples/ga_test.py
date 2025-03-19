@@ -44,16 +44,19 @@ def main():
         evaluator=evaluator,
         optimization_config=ga_config,
         output_dir='.',
-        population_size=10,
+        population_size=20,
         max_steps=50
     )
     
     # 添加一个简单的回调函数用于输出进度
+    # 在 examples 目录下的脚本中，确保回调正确定义
     def progress_callback(optimizer, step):
         state = optimizer.get_state()
-        print(f"Step {step}: Best energy = {state.get('best_energy', 'N/A')}, "
-              f"Evaluations = {state.get('evaluations', 'N/A')}")
-    
+        print(f"Callback received state: {state}")
+        best_energy = state.get('best_energy', 'N/A')
+        evaluations = state.get('evaluations', 'N/A')
+        print(f"Step {step}: Best energy = {best_energy}, Evaluations = {evaluations}")
+
     runner.add_callback(progress_callback)
     
     print("开始Al10体相的结构优化...")

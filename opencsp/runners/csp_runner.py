@@ -81,8 +81,12 @@ class CSPRunner:
     晶体结构预测运行器，协调整个搜索过程
     """
     
-    def __init__(self, structure_generator: StructureGenerator, evaluator: Evaluator, 
-                 optimization_config: Optional[OptimizationConfig] = None, **kwargs):
+    def __init__(self, structure_generator: StructureGenerator,
+                 evaluator: Evaluator, 
+                 optimization_config: Optional[OptimizationConfig] = None,
+                 operation_registry: OperationRegistry = None,
+                 optimizer_factory: OptimizerFactory = None,
+                 **kwargs):
         """
         初始化CSP运行器
         
@@ -97,8 +101,8 @@ class CSPRunner:
         self.optimization_config = optimization_config
         
         # 创建操作注册中心和优化器工厂
-        self.operation_registry = OperationRegistry()
-        self.optimizer_factory = OptimizerFactory()
+        self.operation_registry = operation_registry or  OperationRegistry()
+        self.optimizer_factory = optimizer_factory or  OptimizerFactory()
         self.optimizer_factory.operation_registry = self.operation_registry
         
         # 注册优化器类型

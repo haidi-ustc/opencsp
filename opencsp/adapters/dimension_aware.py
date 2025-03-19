@@ -44,7 +44,7 @@ class DimensionAwareAdapter:
                 
         # 获取合适的操作器
         operator = self.get_operator(dim)
-        print(operator)
+        #print(operator)
 
         if operator is None:
             raise ValueError(f"No operator available for dimensionality {dim}")

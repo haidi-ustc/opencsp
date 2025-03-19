@@ -1,4 +1,6 @@
 # opencsp/algorithms/optimizer.py
+import traceback
+import copy
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Type, Callable, TypeVar
 
@@ -56,9 +58,23 @@ class Optimizer(ABC):
             print(f"Initialization failed: {str(e)}")
             return None
             
-        if self.best_individual is None:
-            print("No valid initial best individual. Optimization cannot proceed.")
-            return None
+            # 初始化后立即更新最佳个体
+        if hasattr(self, 'population') and self.population:
+           current_best = self.population.get_best()
+           if current_best:
+               print(f"Initial best: id={current_best.id}, energy={current_best.energy}, fitness={current_best.fitness}")
+
+               # 手动创建和复制最佳个体
+               new_best = Individual(structure=copy.deepcopy(current_best.structure))
+               new_best.energy = current_best.energy
+               new_best.fitness = current_best.fitness
+               for key, value in current_best.properties.items():
+                   new_best.properties[key] = copy.deepcopy(value)
+
+               self.best_individual = new_best
+               print(f"After setting best_individual: id={self.best_individual.id}, energy={self.best_individual.energy}, fitness={self.best_individual.fitness}")
+
+
         
         try:
             for step in range(max_steps):
@@ -82,6 +98,7 @@ class Optimizer(ABC):
                     break
         except Exception as e:
             print(f"Optimization failed at step {step}: {str(e)}")
+            traceback.print_exc()
                 
         return self.best_individual
         
@@ -128,9 +145,9 @@ class OptimizerFactory:
             
             # 为遗传算法创建交叉和变异适配器
             crossover_adapter = DimensionAwareAdapter()
-            print(crossover_adapter)
+            #print(crossover_adapter)
             mutation_adapter = DimensionAwareAdapter()
-            print(mutation_adapter)
+            #print(mutation_adapter)
             
             # 添加各维度的交叉操作
             print(f"check: {self.operation_registry}")
