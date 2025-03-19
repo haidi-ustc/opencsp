@@ -1,0 +1,82 @@
+# Python bytecode files
+*.pyc
+*.pyo
+__pycache__/
+
+# Virtual environment directories
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE files (VS Code, PyCharm, etc.)
+.vscode/
+.idea/
+
+# Mypy and pytypes cache
+.mypy_cache/
+.pytype/
+
+# Pytest cache
+.pytest_cache/
+
+# Distribution / packaging files
+*.egg-info/
+*.eggs/
+dist/
+build/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# Database files (if using SQLite, for example)
+*.sqlite3
+
+# FastAPI generated files
+*.db
+*.db-journal
+
+# Docker related files
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Secrets and environment variables (DO NOT track .env files with sensitive data)
+.env
+.env.*
+*.env.*
+
+# .env and environment configuration for local development
+*.local
+
+# macOS system files
+.DS_Store
+
+# Windows system files
+Thumbs.db
+
+# Git configuration files
+.gitmodules
+
+# Ignore coverage report files
+coverage/
+*.cover
+.coverage.*
+*.hypothesis/
+nosetests.xml
+coverage.xml
+
+# Ignore Pycharm project files
+.idea/
+
+# Ignore testing and deployment related files
+test_*.py
+tox.ini
+*.log
+
+sio2_ga_results
+result
