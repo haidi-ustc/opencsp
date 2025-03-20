@@ -1,32 +1,110 @@
 # opencsp/__init__.py
 """
-openCSP: 开源晶体结构预测软件
-==================================
+OpenCSP: Open-Source Crystal Structure Prediction Software
+==========================================================
 
-openCSP是一个用于晶体结构预测和优化的开源软件包，支持不同维度的系统（团簇、表面、晶体）
-和多种全局优化算法（遗传算法、粒子群算法等）。
+OpenCSP is a comprehensive Python library for crystal structure prediction 
+and optimization. It supports various dimensional systems (clusters, surfaces, 
+crystals) and multiple global optimization algorithms.
 
-主要特点:
-- 支持多种全局优化算法
-- 自动处理不同维度的结构（1D、2D、3D）
-- 支持多种计算引擎（通过ASE和自定义适配器）
-- 可扩展的插件系统
-- 灵活的配置选项
+Key Features:
+- Multi-dimensional structure prediction (1D, 2D, 3D)
+- Supports multiple global optimization algorithms
+- Flexible computational engine integration
+- Extensible plugin system
+- Advanced API for easy use
 
-简单使用示例:
+Key Optimization Algorithms:
+- Genetic Algorithm (GA)
+- Particle Swarm Optimization (PSO)
+- Basin Hopping
+- And more...
+
+Dependencies:
+- numpy
+- scipy
+- ase
+- pymatgen (optional)
+
+Quick Example:
     >>> from opencsp.api import OpenCSP
+    >>> from ase.calculators.emt import EMT
+    
+    >>> # Create OpenCSP instance
     >>> csp = OpenCSP()
+    
+    >>> # Create ASE calculator
     >>> calculator = csp.create_calculator('ase', ase_calculator=EMT())
     >>> evaluator = csp.create_evaluator(calculator)
-    >>> structure_gen = csp.create_structure_generator('random', composition={'Si': 10}, dimensionality=1)
+    
+    >>> # Create structure generator
+    >>> structure_gen = csp.create_structure_generator(
+    ...     'random', 
+    ...     composition={'Si': 10}, 
+    ...     dimensionality=1
+    ... )
+    
+    >>> # Configure genetic algorithm
     >>> ga_config = csp.create_optimization_config('ga')
     >>> ga_config.set_param('evaluator', evaluator)
-    >>> runner = csp.create_runner(structure_generator=structure_gen, evaluator=evaluator, optimization_config=ga_config)
+    
+    >>> # Create and run optimization
+    >>> runner = csp.create_runner(
+    ...     structure_generator=structure_gen, 
+    ...     evaluator=evaluator, 
+    ...     optimization_config=ga_config
+    ... )
     >>> best_structure = runner.run()
 """
 
+# Package version follows semantic versioning
 __version__ = '0.1.0'
-__author__ = 'openCSP Development Team'
 
-# 导出关键API
-#from opencsp.api import OpenCSP
+# Package authorship
+__author__ = 'OpenCSP Development Team'
+__email__ = 'dev@opencsp.org'
+
+# Package metadata
+__description__ = 'Open-Source Crystal Structure Prediction Software'
+__url__ = 'https://github.com/opencsp/opencsp'
+__license__ = 'MIT'
+
+# Core imports for convenient access
+from opencsp.api import OpenCSP
+from opencsp.core.individual import Individual
+from opencsp.core.evaluator import Evaluator
+from opencsp.core.structure_generator import StructureGenerator
+from opencsp.core.calculator import ASECalculatorWrapper, MLCalculator
+from opencsp.core.constraints import MinimumDistanceConstraint, SymmetryConstraint
+from opencsp.runners.csp_runner import CSPRunner, OptimizationConfig
+
+# List of symbols to export when using `from opencsp import *`
+__all__ = [
+    # Main API entry point
+    'OpenCSP',
+    
+    # Core classes
+    'Individual', 
+    'Evaluator', 
+    'StructureGenerator',
+    
+    # Calculators
+    'ASECalculatorWrapper',
+    'MLCalculator',
+    
+    # Constraints
+    'MinimumDistanceConstraint',
+    'SymmetryConstraint',
+    
+    # Optimization components
+    'OptimizationConfig',
+    'CSPRunner',
+    
+    # Metadata
+    '__version__',
+    '__author__',
+    '__description__',
+    '__url__',
+    '__license__'
+]
+

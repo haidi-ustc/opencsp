@@ -1,5 +1,12 @@
+"""
+OpenCSP API module: Provides a simplified interface to the OpenCSP library components.
+
+This module contains the main OpenCSP class that serves as the entry point for users,
+offering factory methods for creating various components needed for crystal structure prediction.
+"""
+
 from typing import Dict, Any, Optional, List, Union
-import logging
+import os
 
 from opencsp.core.calculator import ASECalculatorWrapper, MLCalculator
 from opencsp.core.evaluator import Evaluator
@@ -12,8 +19,7 @@ from opencsp.adapters.registry import OperationRegistry
 from opencsp.algorithms.optimizer import OptimizerFactory
 from opencsp.runners.csp_runner import CSPRunner, OptimizationConfig
 from opencsp.plugins.manager import PluginManager
-from opencsp.utils.logger import Logger
-
+from opencsp.utils.logging import get_logger
 
 class OpenCSP:
     """
@@ -23,15 +29,12 @@ class OpenCSP:
     for creating various components needed for a CSP workflow.
     """
     
-    def __init__(self, log_level: int = logging.INFO):
+    def __init__(self):
         """
         Initialize the OpenCSP API.
-        
-        Args:
-            log_level: Logging level (default: logging.INFO)
         """
         # Set up logging
-        self.logger = Logger(name="opencsp", level=log_level)
+        self.logger = get_logger(__name__)
         self.logger.info("Initializing OpenCSP")
         
         # Create core components
@@ -216,25 +219,64 @@ class OpenCSP:
         """
         Create a CSP runner to execute the structure prediction.
         
+        This method integrates all the components needed for structure prediction and
+        creates a runner instance that can execute the prediction process.
+        
         Args:
             structure_generator: Structure generator instance
             evaluator: Evaluator instance
             optimization_config: Optimization configuration
-            **kwargs: Additional parameters for the runner
+            **kwargs: Additional parameters:
                 - population_size: Number of structures per generation
                 - max_steps: Maximum number of optimization steps
-                - output_dir: Directory to save results
+                - output_dir: Directory to save results (default: './csprun')
+                - callbacks: List of callback functions
                 
         Returns:
             CSPRunner instance
+            
+        Note:
+            The optimization_config should have the evaluator already set as a parameter.
+            Population size and max_steps can be specified here or when calling run().
         """
         self.logger.info("Creating CSP runner")
-        return CSPRunner(structure_generator,
-                        evaluator, 
-                        optimization_config,
-                        operation_registry=self.operation_registry,  
-                        optimizer_factory=self.optimizer_factory, 
-                        **kwargs)
+        
+        # Create output directory
+        output_dir = kwargs.get('output_dir', './csprun')
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Ensure optimization_config has evaluator set
+        if optimization_config and 'evaluator' not in optimization_config.params:
+            optimization_config.set_param('evaluator', evaluator)
+            
+        # Create the runner
+        runner = CSPRunner(
+            structure_generator,
+            evaluator, 
+            optimization_config,
+            operation_registry=self.operation_registry,  
+            optimizer_factory=self.optimizer_factory, 
+            **kwargs
+        )
+        
+        # If population_size was specified in both optimization_config and kwargs, 
+        # log a warning about potential redundancy
+        if (optimization_config and optimization_config.params.get('population_size') is not None and
+            kwargs.get('population_size') is not None):
+            self.logger.warning(
+                f"Population size specified in both optimization_config ({optimization_config.params['population_size']}) "
+                f"and runner parameters ({kwargs['population_size']}). The runner parameter will take precedence."
+            )
+            
+        # Same for max_steps/max_generations
+        if (optimization_config and optimization_config.params.get('max_generations') is not None and
+            kwargs.get('max_steps') is not None):
+            self.logger.warning(
+                f"Maximum steps/generations specified in both optimization_config ({optimization_config.params['max_generations']}) "
+                f"and runner parameters ({kwargs['max_steps']}). The runner parameter will take precedence."
+            )
+        
+        return runner
         
     def load_plugin(self, plugin_name: str, **kwargs) -> Any:
         """

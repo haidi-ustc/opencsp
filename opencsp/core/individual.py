@@ -5,6 +5,9 @@ from pymatgen.core import Structure
 import numpy as np
 from monty.json import MSONable
 
+from opencsp.utils.logging import get_logger
+logger = get_logger(__name__)
+
 T = TypeVar('T', bound='Individual')
 
 class Individual(MSONable):
@@ -20,12 +23,16 @@ class Individual(MSONable):
         structure: The atomic structure (ASE Atoms or pymatgen Structure)
         energy: The calculated energy of the structure
         fitness: The fitness value in the optimization context
+        dimensionality: The dimensionality of the structure (1=cluster, 2=surface, 3=crystal)
         properties: Dictionary containing additional properties
         id: Unique identifier for the individual
     """
     
-    def __init__(self, structure: Any, energy: Optional[float] = None, 
-                 fitness: Optional[float] = None, properties: Optional[Dict[str, Any]] = None,
+    def __init__(self, structure: Any,
+                 energy: Optional[float] = None, 
+                 fitness: Optional[float] = None,
+                 dimensionality: Optional[int] = None,
+                 properties: Optional[Dict[str, Any]] = None,
                  id: Optional[str] = None):
         """
         Initialize an Individual instance.
@@ -34,6 +41,7 @@ class Individual(MSONable):
             structure: The atomic structure (ASE Atoms or pymatgen Structure)
             energy: The calculated energy of the structure (default: None)
             fitness: The fitness value for optimization (default: None)
+            dimensionality: The dimensionality of the structure (1=cluster, 2=surface, 3=crystal)
             properties: Dictionary of additional properties (default: empty dict)
             id: Unique identifier (default: auto-generated UUID)
         
@@ -46,11 +54,12 @@ class Individual(MSONable):
             >>> coords = [[0, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5],
             ...           [0.25, 0.25, 0.25], [0.75, 0.75, 0.25], [0.75, 0.25, 0.75], [0.25, 0.75, 0.75]]
             >>> structure = Structure(lattice, species, coords)
-            >>> individual = Individual(structure, energy=-10.5, fitness=0.95)
+            >>> individual = Individual(structure, energy=-10.5, fitness=0.95, dimensionality=3)
         """
         self._structure = structure
         self._energy = energy
         self._fitness = fitness
+        self._dimensionality = dimensionality
         self._properties = properties or {}
         self._id = id if id is not None else str(uuid.uuid4())[:8]  
     
@@ -138,6 +147,26 @@ class Individual(MSONable):
         self._fitness = value
     
     @property
+    def dimensionality(self) -> Optional[int]:
+        """
+        Get the structure dimensionality.
+        
+        Returns:
+            Optional[int]: Dimensionality value (1=cluster, 2=surface, 3=crystal)
+        """
+        return self._dimensionality
+    
+    @dimensionality.setter
+    def dimensionality(self, value: Optional[int]) -> None:
+        """
+        Set the structure dimensionality.
+        
+        Args:
+            value: New dimensionality value
+        """
+        self._dimensionality = value
+    
+    @property
     def properties(self) -> Dict[str, Any]:
         """
         Get the additional properties dictionary.
@@ -161,7 +190,7 @@ class Individual(MSONable):
             >>> from pymatgen.core import Structure
             >>> from opencsp.core.individual import Individual
             >>> structure = Structure.from_spacegroup("Fm-3m", [[0, 0, 0]], ["Cu"])
-            >>> ind1 = Individual(structure, energy=-5.0)
+            >>> ind1 = Individual(structure, energy=-5.0, dimensionality=3)
             >>> ind2 = ind1.copy()  # Create a deep copy
             >>> ind1.energy == ind2.energy  # True
             >>> ind1.structure == ind2.structure  # False (different objects)
@@ -171,6 +200,7 @@ class Individual(MSONable):
             structure=copy.deepcopy(self.structure),
             energy=self.energy,
             fitness=self.fitness,
+            dimensionality=self.dimensionality,
             properties=copy.deepcopy(self.properties),
             id=str(uuid.uuid4())[:8]  # Generate a new ID for the copy
         )
@@ -184,7 +214,7 @@ class Individual(MSONable):
         Returns:
             str: String representation
         """
-        return f"Individual(id={self.id}, energy={self.energy}, fitness={self.fitness})"
+        return f"Individual(id={self.id}, energy={self.energy}, fitness={self.fitness}, dimensionality={self.dimensionality})"
     
     def __repr__(self) -> str:
         """
@@ -208,7 +238,7 @@ class Individual(MSONable):
             >>> from pymatgen.core import Structure
             >>> from opencsp.core.individual import Individual
             >>> structure = Structure.from_spacegroup("Fm-3m", [[0, 0, 0]], ["Cu"])
-            >>> ind = Individual(structure, energy=-5.0, fitness=0.95)
+            >>> ind = Individual(structure, energy=-5.0, fitness=0.95, dimensionality=3)
             >>> d = ind.as_dict()
             >>> d['energy']  # -5.0
         """
@@ -218,9 +248,10 @@ class Individual(MSONable):
             "@module": self.__class__.__module__,
             "@class": self.__class__.__name__,
             "id": self.id,
-            "structure": structure_to_dict(self.structure),
+            "structure": self.structure,
             "energy": self.energy,
             "fitness": self.fitness,
+            "dimensionality": self.dimensionality,
             "properties": {k: v for k, v in self.properties.items() 
                           if self._is_serializable(v)}
         }
@@ -241,20 +272,21 @@ class Individual(MSONable):
         Example:
             >>> from opencsp.core.individual import Individual
             >>> d = {'@module': 'opencsp.core.individual', '@class': 'Individual',
-            ...      'id': 'abcd1234', 'energy': -5.0, 'fitness': 0.95,
+            ...      'id': 'abcd1234', 'energy': -5.0, 'fitness': 0.95, 'dimensionality': 3,
             ...      'structure': {'type': 'pymatgen', 'data': {...}},
             ...      'properties': {'forces': [...]}}
             >>> ind = Individual.from_dict(d)
         """
-       # from opencsp.utils.serialization import dict_to_structure
+        # from opencsp.utils.serialization import dict_to_structure
         
-       # structure = dict_to_structure(d['structure'])
+        # structure = dict_to_structure(d['structure'])
         
         # Create a new Individual
         individual = cls(
-            structure=structure,
+            structure=d.get('structure'),
             energy=d.get('energy'),
             fitness=d.get('fitness'),
+            dimensionality=d.get('dimensionality'),
             properties=d.get('properties', {}),
             id=d.get('id')
         )

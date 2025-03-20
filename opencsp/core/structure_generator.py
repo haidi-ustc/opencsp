@@ -15,6 +15,8 @@ from typing import Dict, List, Optional, Any, Tuple, Union, Type, TypeVar
 
 import numpy as np
 from monty.json import MSONable
+from opencsp.utils.logging import get_logger
+logger = get_logger(__name__)
 
 T = TypeVar('T', bound='StructureGenerator')
 

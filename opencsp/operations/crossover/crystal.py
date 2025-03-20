@@ -32,8 +32,8 @@ class CrystalCrossover(StructureOperation):
             两个子代个体的列表
         """
         # 确保结构是晶体
-        dim1 = get_structure_dimensionality(parent1.structure)
-        dim2 = get_structure_dimensionality(parent2.structure)
+        dim1 = parent1.dimensionality 
+        dim2 = parent2.dimensionality 
         
         if dim1 != 3 or dim2 != 3:
             raise ValueError(f"CrystalCrossover只适用于晶体(3D)，但接收到的维度为{dim1}和{dim2}")
@@ -167,8 +167,8 @@ class CrystalCrossover(StructureOperation):
             child2_struct = Atoms(symbols=child2_species, scaled_positions=child2_coords, cell=cell2, pbc=pbc2)
         
         # 创建子代个体
-        child1 = Individual(child1_struct)
-        child2 = Individual(child2_struct)
+        child1 = Individual(child1_struct, dimensionality = parent1.dimensionality)
+        child2 = Individual(child2_struct, dimensionality = parent2.dimensionality)
         
         return [child1, child2]
     
@@ -273,7 +273,7 @@ class CrystalCrossover(StructureOperation):
             child2_struct.set_cell(new_cell2, scale_atoms=True)
         
         # 创建子代个体
-        child1 = Individual(child1_struct)
-        child2 = Individual(child2_struct)
+        child1 = Individual(child1_struct, dimensionality=parent1.dimensionality)
+        child2 = Individual(child2_struct, dimensionality=parent2.dimensionality)
         
         return [child1, child2]
