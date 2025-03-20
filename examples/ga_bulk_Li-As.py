@@ -12,7 +12,7 @@ from opencsp.utils.logging import setup_logging, get_logger
 
 def main():
     # Set up logging
-    setup_logging(log_file='ga_bulk.log', log_level='info')
+    setup_logging(log_file='ga_bulk_LiAS.log', log_level='info')
     logger = get_logger(__name__)
     
     # Initialize OpenCSP
@@ -24,7 +24,7 @@ def main():
         from opencsp.utils.utils import get_universal_calculator
         
         logger.info("Setting up MatSimulator calculator")
-        model_name = "mattersim-v1.0.0-5M.pth"
+        model_name = "Li-As-model.pth"
         mattersim = get_universal_calculator("mattersim", model_file=model_name)
         calculator = csp.create_calculator('ase', ase_calculator=mattersim, relax=True)
     except ImportError:
@@ -37,7 +37,7 @@ def main():
     # Create structure generator
     structure_gen = csp.create_structure_generator(
         'symmetry',
-        composition={'Si': 4, "O": 8}
+        composition={'Li': 3, "As": 1}
     )
     
     # Configure GA optimization
