@@ -84,4 +84,5 @@ result
 *log
 *.out
 *.bk
-*examples/results/*
+*examples/csprun/*
+*.pth
