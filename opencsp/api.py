@@ -32,13 +32,16 @@ class OpenCSP:
     def __init__(self,
                  optimizer_type: str = 'ga',
                  dimensionality: int = 3
+                 variable_composition: bool = False ,
+                 is_molecule: bool = False
                  ):
         """
         Initialize the OpenCSP API.
         Args:
             optimizer_type: Optimization algorithm ('ga', 'pso', etc.)
             dimensionality: Structure dimensionality (1: cluster, 2: surface, 3: crystal)
-
+            is_molecule: Whether the search involves molecular crystal
+            composition_variation: Whether to allow compositional variation
         """
         # Set up logging
         self.logger = get_logger(__name__)
@@ -47,6 +50,8 @@ class OpenCSP:
 
         self.optimizer_type = optimizer_type
         self.dimensionality = dimensionality
+        self.variable_composition = variable_composition
+        self.is_molecule = is_molecule
         
         # Create core components
         self.operation_registry = OperationRegistry()
@@ -61,14 +66,13 @@ class OpenCSP:
         """Register default optimizers and operations"""
         self.logger.info("Registering default components")
         
-        from opencsp.algorithms.genetic import GeneticAlgorithm
-        from opencsp.algorithms.pso import ParticleSwarmOptimization
+        if self.optimizer_type == 'ga':
+           from opencsp.algorithms.genetic import GeneticAlgorithm
+           self.optimizer_factory.register_optimizer('ga', GeneticAlgorithm)
+        elif self.optimizer_type == 'pso':
+           from opencsp.algorithms.pso import ParticleSwarmOptimization
+           self.optimizer_factory.register_optimizer('pso', ParticleSwarmOptimization)
         
-        # Register default optimizers
-        self.optimizer_factory.register_optimizer('ga', GeneticAlgorithm)
-        self.optimizer_factory.register_optimizer('pso', ParticleSwarmOptimization)
-        
-        # Register default operations
         self._register_operations()
 
     def _register_operations(self):
@@ -111,12 +115,12 @@ class OpenCSP:
         from opencsp.operations.velocity.crystal import CrystalVelocityUpdate
 
         # Register position operations
-        self.operation_registry.register_position(ClusterPositionUpdate(), 1)
+        self.operation_registry.register_position(ClusterPositionUpdate(), 0)
         self.operation_registry.register_position(SurfacePositionUpdate(), 2)
         self.operation_registry.register_position(CrystalPositionUpdate(), 3)
 
         # Register velocity operations
-        self.operation_registry.register_velocity(ClusterVelocityUpdate(), 1)
+        self.operation_registry.register_velocity(ClusterVelocityUpdate(), 0)
         self.operation_registry.register_velocity(SurfaceVelocityUpdate(), 2)
         self.operation_registry.register_velocity(CrystalVelocityUpdate(), 3)
         
