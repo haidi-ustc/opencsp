@@ -130,8 +130,8 @@ class Evaluator(MSONable):
             try:
                 raw_fitness = self.fitness_function(individual)
                 individual.fitness = raw_fitness - penalty
-                logger.info(f"Individual {individual.id}: fitness = {individual.fitness:.6f} " 
-                            f"(raw: {raw_fitness:.6f}, penalty: {penalty:.6f}), dimensionality: {individual.dimensionality}")
+                logger.debug(f"Individual {individual.id}: fitness = {individual.fitness:.6f} " 
+                            f"(raw: {raw_fitness:.6f}, penalty: {penalty:.6f}")
             except Exception as e:
                 logger.error(f"Error calculating fitness: {e}")
                 individual.fitness = float('-inf')

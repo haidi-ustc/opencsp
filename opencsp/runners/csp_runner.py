@@ -544,15 +544,7 @@ class CSPRunner(MSONable):
         # Save best structure info
         best_info_path = os.path.join(self.results_dir, 'best_info.json')
         try:
-            with open(best_info_path, 'w') as f:
-                info = {
-                    'energy': best_individual.energy,
-                    'fitness': best_individual.fitness,
-                    'properties': {k: v for k, v in best_individual.properties.items() 
-                                if isinstance(v, (int, float, str, bool, type(None)))}
-                }
-                json.dump(info, f, indent=2)
-            
+            best_individual.save( best_info_path )
             logger.info(f"Saved best structure info to {best_info_path}")
         except Exception as e:
             logger.error(f"Error saving best info: {e}")
@@ -579,22 +571,23 @@ class CSPRunner(MSONable):
         # Save configuration
         try:
             config_path = os.path.join(self.results_dir, 'config.json')
-            config_dict = {
-                "optimizer_type": self.optimization_config.optimizer_type,
-                "max_steps": self.max_steps,
-                "population_size": self.population_size
-            }
-            
-            # Add serializable params
-            params_dict = {}
-            for key, value in self.optimization_config.params.items():
-                if isinstance(value, (int, float, str, bool, type(None))):
-                    params_dict[key] = value
-            
-            config_dict["parameters"] = params_dict
-            
-            with open(config_path, 'w') as f:
-                json.dump(config_dict, f, indent=2)
+            self.optimization_config.save(config_path )
+            #config_dict = {
+            #    "optimizer_type": self.optimization_config.optimizer_type,
+            #    "max_steps": self.max_steps,
+            #    "population_size": self.population_size
+            #}
+            #
+            ## Add serializable params
+            #params_dict = {}
+            #for key, value in self.optimization_config.params.items():
+            #    if isinstance(value, (int, float, str, bool, type(None))):
+            #        params_dict[key] = value
+            #
+            #config_dict["parameters"] = params_dict
+            #
+            #with open(config_path, 'w') as f:
+            #    json.dump(config_dict, f, indent=2)
             
             logger.info(f"Saved configuration to {config_path}")
         except Exception as e:

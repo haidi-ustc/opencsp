@@ -146,8 +146,6 @@ class Calculator(ABC, MSONable):
         parameters = d.get("parameters", {})
         return cls(**parameters)
 
-# Update to ASECalculatorWrapper class in opencsp/core/calculator.py
-
     @contextmanager
     def suppress_output(self):
         """Context manager to suppress standard output and error"""
@@ -387,10 +385,10 @@ class ASECalculatorWrapper(Calculator):
                 logger.debug(f"Applied constraints to structure: {constraints}")
                 
             # Run optimization
-            logger.info(f"Starting structure relaxation with {optimizer_name} (fmax={fmax}, steps={steps})")
+            logger.debug(f"Starting structure relaxation with {optimizer_name} (fmax={fmax}, steps={steps})")
             optimizer.run(fmax=fmax, steps=steps)
             
-            logger.info(f"Structure relaxation completed: {optimizer.nsteps} steps, converged={optimizer.converged()}")
+            logger.debug(f"Structure relaxation completed: {optimizer.nsteps} steps, converged={optimizer.converged()}")
             
         except ImportError as e:
             logger.error(f"Failed to import ASE optimization modules: {e}")

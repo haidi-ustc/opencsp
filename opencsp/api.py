@@ -29,13 +29,24 @@ class OpenCSP:
     for creating various components needed for a CSP workflow.
     """
     
-    def __init__(self):
+    def __init__(self,
+                 optimizer_type: str = 'ga',
+                 dimensionality: int = 3
+                 ):
         """
         Initialize the OpenCSP API.
+        Args:
+            optimizer_type: Optimization algorithm ('ga', 'pso', etc.)
+            dimensionality: Structure dimensionality (1: cluster, 2: surface, 3: crystal)
+
         """
         # Set up logging
         self.logger = get_logger(__name__)
+
         self.logger.info("Initializing OpenCSP")
+
+        self.optimizer_type = optimizer_type
+        self.dimensionality = dimensionality
         
         # Create core components
         self.operation_registry = OperationRegistry()
@@ -58,43 +69,53 @@ class OpenCSP:
         self.optimizer_factory.register_optimizer('pso', ParticleSwarmOptimization)
         
         # Register default operations
-        self._register_default_operations()
-        
-    def _register_default_operations(self):
-        """Register default operations for different structure dimensions"""
-        # Import operations
+        self._register_operations()
+
+    def _register_operations(self):
+        """
+        Dynamically register operations based on the optimizer type
+        """
+        if self.optimizer_type == 'ga':
+            self._register_ga_operations()
+        elif self.optimizer_type == 'pso':
+            self._register_pso_operations()
+
+    def _register_ga_operations(self):
+        """Register crossover and mutation operations for GA"""
         from opencsp.operations.crossover.cluster import ClusterCrossover
         from opencsp.operations.crossover.surface import SurfaceCrossover
         from opencsp.operations.crossover.crystal import CrystalCrossover
-        
+
         from opencsp.operations.mutation.cluster import ClusterMutation
         from opencsp.operations.mutation.surface import SurfaceMutation
         from opencsp.operations.mutation.crystal import CrystalMutation
-        
-        from opencsp.operations.position.cluster import ClusterPositionUpdate
-        from opencsp.operations.position.surface import SurfacePositionUpdate
-        from opencsp.operations.position.crystal import CrystalPositionUpdate
-        
-        from opencsp.operations.velocity.cluster import ClusterVelocityUpdate
-        from opencsp.operations.velocity.surface import SurfaceVelocityUpdate
-        from opencsp.operations.velocity.crystal import CrystalVelocityUpdate
-        
+
         # Register crossover operations
         self.operation_registry.register_crossover(ClusterCrossover(), 1)
         self.operation_registry.register_crossover(SurfaceCrossover(), 2)
         self.operation_registry.register_crossover(CrystalCrossover(), 3)
-        
+
         # Register mutation operations
         self.operation_registry.register_mutation(ClusterMutation(), 1)
         self.operation_registry.register_mutation(SurfaceMutation(), 2)
         self.operation_registry.register_mutation(CrystalMutation(), 3)
-        
-        # Register position update operations
+
+    def _register_pso_operations(self):
+        """Register position and velocity operations for PSO"""
+        from opencsp.operations.position.cluster import ClusterPositionUpdate
+        from opencsp.operations.position.surface import SurfacePositionUpdate
+        from opencsp.operations.position.crystal import CrystalPositionUpdate
+
+        from opencsp.operations.velocity.cluster import ClusterVelocityUpdate
+        from opencsp.operations.velocity.surface import SurfaceVelocityUpdate
+        from opencsp.operations.velocity.crystal import CrystalVelocityUpdate
+
+        # Register position operations
         self.operation_registry.register_position(ClusterPositionUpdate(), 1)
         self.operation_registry.register_position(SurfacePositionUpdate(), 2)
         self.operation_registry.register_position(CrystalPositionUpdate(), 3)
-        
-        # Register velocity update operations
+
+        # Register velocity operations
         self.operation_registry.register_velocity(ClusterVelocityUpdate(), 1)
         self.operation_registry.register_velocity(SurfaceVelocityUpdate(), 2)
         self.operation_registry.register_velocity(CrystalVelocityUpdate(), 3)
@@ -167,9 +188,13 @@ class OpenCSP:
         self.logger.info(f"Creating {generator_type} structure generator")
         
         if generator_type == 'random':
-            return RandomStructureGenerator(composition, **kwargs)
+            return RandomStructureGenerator(composition,
+                                            dimensionality = self.dimensionality,
+                                            **kwargs)
         elif generator_type == 'symmetry':
-            return SymmetryBasedStructureGenerator(composition, **kwargs)
+            return SymmetryBasedStructureGenerator(composition, 
+                                            dimensionality = self.dimensionality,
+                                                   **kwargs)
         else:
             raise ValueError(f"Unknown generator type: {generator_type}")
             
@@ -198,24 +223,24 @@ class OpenCSP:
         else:
             raise ValueError(f"Unknown constraint type: {constraint_type}")
             
-    def create_optimization_config(self, optimizer_type: str, dimensionality: Optional[int] = None) -> OptimizationConfig:
+    def create_optimization_config(self) -> OptimizationConfig:
         """
         Create an optimization configuration.
         
         Args:
-            optimizer_type: Type of optimizer ('ga', 'pso', etc.)
-            dimensionality: Structure dimension (1, 2, or 3)
                 
         Returns:
             OptimizationConfig instance
         """
-        self.logger.info(f"Creating optimization config for {optimizer_type}")
-        return OptimizationConfig(optimizer_type, dimensionality)
-        
-    def create_runner(self, structure_generator: Union[RandomStructureGenerator, SymmetryBasedStructureGenerator],
-                     evaluator: Evaluator, 
-                     optimization_config: Optional[OptimizationConfig] = None,
-                     **kwargs) -> CSPRunner:
+        self.logger.info(f"Creating optimization config for {self.optimizer_type}")
+        return OptimizationConfig(self.optimizer_type, self.dimensionality)
+
+    def create_runner(self,
+                      structure_generator: Union[RandomStructureGenerator,
+                      SymmetryBasedStructureGenerator],
+                      evaluator: Evaluator, 
+                      optimization_config: Optional[OptimizationConfig] = None,
+                      **kwargs) -> CSPRunner:
         """
         Create a CSP runner to execute the structure prediction.
         
