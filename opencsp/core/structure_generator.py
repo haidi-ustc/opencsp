@@ -1,4 +1,3 @@
-# opencsp/core/structure_generator.py
 """
 This module provides structure generator classes for creating initial atomic structures
 in various dimensionalities (clusters, surfaces, crystals) for structure prediction.
@@ -12,10 +11,12 @@ import random
 import traceback
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any, Tuple, Union, Type, TypeVar
+from opencsp.utils.io import suppress_output, capture_output
 
 import numpy as np
 from monty.json import MSONable
 from opencsp.utils.logging import get_logger
+
 logger = get_logger(__name__)
 
 T = TypeVar('T', bound='StructureGenerator')
@@ -188,8 +189,8 @@ class RandomStructureGenerator(StructureGenerator):
         max_attempts = n * 100  # Maximum attempts per structure
         failed_attempts = 0
         
-        print(f"Attempting to generate {n} structures...")
-        print(f"Parameters: composition={self.composition}, volume_range={self.volume_range}, "
+        logger.info(f"Attempting to generate {n} structures...")
+        logger.info(f"Parameters: composition={self.composition}, volume_range={self.volume_range}, "
               f"dimensionality={self.dimensionality}, min_distance={self.min_distance}")
         
         while len(structures) < n and attempts < max_attempts:
@@ -207,25 +208,25 @@ class RandomStructureGenerator(StructureGenerator):
             if structure is None:
                 failed_attempts += 1
                 if failed_attempts % 10 == 0:
-                    print(f"Failed to generate structure {failed_attempts} times "
+                    logger.info(f"Failed to generate structure {failed_attempts} times "
                           f"due to atomic distances being too close")
                 continue
                 
             # Check if structure satisfies constraints
             if self.is_valid(structure):
                 structures.append(structure)
-                print(f"Successfully generated structure {len(structures)}/{n}")
+                logger.info(f"Successfully generated structure {len(structures)}/{n}")
             else:
                 failed_attempts += 1
                 if failed_attempts % 10 == 0:
-                    print(f"Failed to validate structure {failed_attempts} times")
+                    logger.info(f"Failed to validate structure {failed_attempts} times")
         
-        print(f"Generated {len(structures)}/{n} structures in {attempts} attempts")
+        logger.info(f"Generated {len(structures)}/{n} structures in {attempts} attempts")
         if len(structures) == 0:
-            print("WARNING: Failed to generate any valid structures. Try adjusting parameters:")
-            print("- Increase volume_range")
-            print("- Decrease min_distance")
-            print("- Simplify composition")
+            logger.info("WARNING: Failed to generate any valid structures. Try adjusting parameters:")
+            logger.info("- Increase volume_range")
+            logger.info("- Decrease min_distance")
+            logger.info("- Simplify composition")
         
         return structures
     
@@ -270,7 +271,7 @@ class RandomStructureGenerator(StructureGenerator):
         except ImportError:
             raise ImportError("pymatgen must be installed to generate structures")
         except Exception as e:
-            print(f"Error generating 1D structure: {e}")
+            logger.info(f"Error generating 1D structure: {e}")
             return None
     
     def _generate_2d(self) -> Any:
@@ -344,7 +345,7 @@ class RandomStructureGenerator(StructureGenerator):
         except ImportError:
             raise ImportError("pymatgen must be installed to generate structures")
         except Exception as e:
-            print(f"Error generating 2D structure: {e}")
+            logger.info(f"Error generating 2D structure: {e}")
             return None
     
     def _generate_3d(self) -> Any:
@@ -372,7 +373,7 @@ class RandomStructureGenerator(StructureGenerator):
             
             num_atoms = len(symbols)
             if num_atoms == 0:
-                print("Error: No atoms specified in composition")
+                logger.info("Error: No atoms specified in composition")
                 return None
                 
             # Try different strategies for placing atoms
@@ -412,7 +413,7 @@ class RandomStructureGenerator(StructureGenerator):
                 
             if too_close:
                 # Try Strategy 2: Spherical placement
-                print("Trying spherical placement strategy...")
+                logger.info("Trying spherical placement strategy...")
                 coords = []
                 radius = (3 * volume / (4 * np.pi)) ** (1/3) * 0.4
                 
@@ -444,7 +445,7 @@ class RandomStructureGenerator(StructureGenerator):
                         break
                 
                 if too_close:
-                    print(f"Unable to place atoms with min_distance={self.min_distance}. "
+                    logger.info(f"Unable to place atoms with min_distance={self.min_distance}. "
                           f"Try reducing min_distance or increasing volume_range.")
                     return None
             
@@ -453,10 +454,10 @@ class RandomStructureGenerator(StructureGenerator):
             return structure
             
         except ImportError as e:
-            print(f"Error importing required modules: {e}")
+            logger.info(f"Error importing required modules: {e}")
             raise ImportError("pymatgen must be installed to generate 3D structures")
         except Exception as e:
-            print(f"Error generating 3D structure: {e}")
+            logger.info(f"Error generating 3D structure: {e}")
             return None
     
     def as_dict(self) -> Dict[str, Any]:
@@ -499,7 +500,7 @@ class RandomStructureGenerator(StructureGenerator):
                         )
                         constraints.append(constraint_cls.from_dict(constraint_data))
                     except (ImportError, AttributeError):
-                        print(f"Warning: Could not reconstruct constraint {constraint_data}")
+                        logger.info(f"Warning: Could not reconstruct constraint {constraint_data}")
         
         return cls(
             composition=d["composition"],
@@ -584,31 +585,32 @@ class SymmetryBasedStructureGenerator(StructureGenerator):
             from pyxtal.symmetry import get_symbol_and_number
             
             for i in range(n):
-                print(f"Generating structure {i+1}/{n}...")
-                structure = self._generate_with_pyxtal()
+                logger.info(f"Generating structure {i+1}/{n}...")
+                with  suppress_output():
+                      structure = self._generate_with_pyxtal()
                 
                 if structure is not None and self.is_valid(structure):
                     structures.append(structure)
-                    print(f"Successfully generated structure {len(structures)}/{n}")
+                    logger.info(f"Successfully generated structure {len(structures)}/{n}")
                 else:
-                    print(f"Failed to generate valid structure {i+1}")
+                    logger.info(f"Failed to generate valid structure {i+1}")
         
         except ImportError:
-            print("pyxtal is not installed. Falling back to manual symmetry generation.")
+            logger.info("pyxtal is not installed. Falling back to manual symmetry generation.")
             
             # Fallback to basic symmetry generation if pyxtal is not available
             for i in range(n):
                 if self.dimensionality == 3:
                     structure = self._generate_3d_symmetry()
                 else:
-                    print("Only 3D symmetry structures are supported without pyxtal")
+                    logger.info("Only 3D symmetry structures are supported without pyxtal")
                     return []
                     
                 if structure is not None and self.is_valid(structure):
                     structures.append(structure)
-                    print(f"Successfully generated structure {len(structures)}/{n}")
+                    logger.info(f"Successfully generated structure {len(structures)}/{n}")
                 else:
-                    print(f"Failed to generate valid structure {i+1}")
+                    logger.info(f"Failed to generate valid structure {i+1}")
         
         return structures
     
@@ -648,14 +650,14 @@ class SymmetryBasedStructureGenerator(StructureGenerator):
                     # Convert to pymatgen structure
                     structure = rand_crystal.to_pymatgen()
                     
-                    print(f"Random crystal generated with space group {space_group_number} ({symbol}).")
+                    logger.info(f"Random crystal generated with space group {space_group_number} ({symbol}).")
                     return structure
                     
                 except Exception as e:
-                    print(f"Attempt {attempt+1} failed: {str(e)}")
+                    logger.info(f"Attempt {attempt+1} failed: {str(e)}")
                     attempt += 1
             
-            print("Max attempts reached. Unable to generate a valid crystal structure.")
+            logger.info("Max attempts reached. Unable to generate a valid crystal structure.")
             return None
             
         except ImportError:
@@ -726,8 +728,8 @@ class SymmetryBasedStructureGenerator(StructureGenerator):
                     return structure
                     
                 except Exception as e:
-                    print(f"Error in symmetry generation: {e}")
-                    traceback.print_exc()
+                    logger.info(f"Error in symmetry generation: {e}")
+                    traceback.logger.info_exc()
                     return None
             
             # If no specific space group or symmetry generation failed,
@@ -789,7 +791,7 @@ class SymmetryBasedStructureGenerator(StructureGenerator):
                         )
                         constraints.append(constraint_cls.from_dict(constraint_data))
                     except (ImportError, AttributeError):
-                        print(f"Warning: Could not reconstruct constraint {constraint_data}")
+                        logger.info(f"Warning: Could not reconstruct constraint {constraint_data}")
         
         return cls(
             composition=d["composition"],
