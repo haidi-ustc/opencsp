@@ -1,7 +1,7 @@
 {
   "optimizer_type": "ga",
   "max_steps": 50,
-  "population_size": 10,
+  "population_size": 20,
   "parameters": {
     "population_size": 10,
     "max_generations": 10,

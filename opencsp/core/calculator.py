@@ -71,7 +71,7 @@ class ASECalculatorWrapper(Calculator):
         
         try:
             energy = atoms.get_potential_energy()
-            return energy
+            return energy/len(atoms)
         except Exception as e:
             # 处理计算错误
             print(f"Error calculating energy: {e}")

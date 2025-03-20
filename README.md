@@ -1,21 +1,63 @@
-# openCSP: 开源晶体结构预测软件
+# openCSP: Open-Source Crystal Structure Prediction Software
 
-openCSP是一个用于晶体结构预测和优化的开源软件，支持不同维度的系统（团簇、表面、晶体）和多种全局优化算法（遗传算法、粒子群算法、盆地跳跃算法等）。
+openCSP is an open-source software for crystal structure prediction and optimization, supporting different dimensional systems (clusters, surfaces, crystals) and multiple global optimization algorithms (genetic algorithm, particle swarm optimization, basin hopping, etc.).
 
-## 主要特点
+## Main Features
 
-- **多维度支持**：可以处理一维团簇、二维表面和三维晶体结构
-- **多种优化算法**：支持遗传算法、粒子群算法、盆地跳跃算法等
-- **灵活的计算引擎集成**：支持ASE计算器和机器学习模型
-- **可扩展的插件系统**：可以方便地添加新的优化算法和操作策略
-- **高级API接口**：提供简洁易用的编程接口
-- **基于pymatgen和ASE**：无缝集成两大流行的材料科学计算库
+- **Multi-dimensional support**: Handles one-dimensional clusters, two-dimensional surfaces, and three-dimensional crystal structures
+- **Multiple optimization algorithms**: Supports genetic algorithms, particle swarm optimization, basin hopping algorithm, and more
+- **Flexible computational engine integration**: Supports ASE calculators and machine learning models
+- **Extensible plugin system**: Easily add new optimization algorithms and operation strategies
+- **Advanced API interface**: Provides a clean and easy-to-use programming interface
+- **Based on pymatgen and ASE**: Seamlessly integrates with two popular materials science computation libraries
 
-## 安装
+## Installation
 
 ```bash
 pip install opencsp
 ```
+
+## Quick Start
+
+```python
+from opencsp.api import OpenCSP
+from ase.calculators.emt import EMT
+
+# Initialize openCSP
+csp = OpenCSP()
+
+# Create calculator and evaluator
+calculator = csp.create_calculator('ase', ase_calculator=EMT())
+evaluator = csp.create_evaluator(calculator)
+
+# Create structure generator
+structure_gen = csp.create_structure_generator(
+    'random', 
+    composition={'Si': 10}, 
+    dimensionality=1,
+    volume_range=(100, 300)
+)
+
+# Configure optimization algorithm
+ga_config = csp.create_optimization_config('ga')
+ga_config.set_param('evaluator', evaluator)
+ga_config.set_param('crossover_rate', 0.8)
+ga_config.set_param('mutation_rate', 0.2)
+
+# Create and run a CSP job
+runner = csp.create_runner(
+    structure_generator=structure_gen, 
+    evaluator=evaluator, 
+    optimization_config=ga_config,
+    population_size=20,
+    max_steps=50
+)
+
+# Get the best structure
+best_structure = runner.run()
+```
+
+## Project Structure
 
 ```
 openCSP/
@@ -56,25 +98,9 @@ openCSP/
     │   ├── __init__.py
     │   ├── base.py
     │   ├── crossover/
-    │   │   ├── __init__.py
-    │   │   ├── cluster.py
-    │   │   ├── surface.py
-    │   │   └── crystal.py
     │   ├── mutation/
-    │   │   ├── __init__.py
-    │   │   ├── cluster.py
-    │   │   ├── surface.py
-    │   │   └── crystal.py
     │   ├── position/
-    │   │   ├── __init__.py
-    │   │   ├── cluster.py
-    │   │   ├── surface.py
-    │   │   └── crystal.py
     │   └── velocity/
-    │       ├── __init__.py
-    │       ├── cluster.py
-    │       ├── surface.py
-    │       └── crystal.py
     ├── adapters/
     │   ├── __init__.py
     │   ├── dimension_aware.py
@@ -92,3 +118,70 @@ openCSP/
         ├── logger.py
         └── serialization.py
 ```
+
+## Advanced Usage
+
+### Custom Calculator
+
+```python
+# Using a custom calculator with openCSP
+from opencsp.api import OpenCSP
+from ase.calculators.lammps import LAMMPS
+
+# Create LAMMPS calculator
+lammps_params = {"pair_style": "eam/alloy", "pair_coeff": ["* * Cu_mishin.eam.alloy Cu"]}
+calc = LAMMPS(parameters=lammps_params)
+
+# Create openCSP calculator wrapper
+csp = OpenCSP()
+calculator = csp.create_calculator('ase', ase_calculator=calc)
+```
+
+### Machine Learning Models
+
+```python
+# Using a machine learning model
+from opencsp.api import OpenCSP
+
+csp = OpenCSP()
+ml_calculator = csp.create_calculator('ml', model_path='path/to/model.pt')
+evaluator = csp.create_evaluator(ml_calculator)
+```
+
+### Custom Constraints
+
+```python
+# Adding constraints to structure generation
+from opencsp.api import OpenCSP
+from opencsp.core.constraints import MinimumDistanceConstraint
+
+csp = OpenCSP()
+
+# Define minimum atomic distances
+min_distances = {
+    'Si-Si': 2.2,  # Minimum Si-Si distance in Å
+    'Si-O': 1.6,   # Minimum Si-O distance in Å
+    'O-O': 2.0,    # Minimum O-O distance in Å
+    'default': 1.5  # Default minimum distance
+}
+
+# Create constraint
+min_dist_constraint = MinimumDistanceConstraint(min_distances)
+
+# Create structure generator with constraint
+structure_gen = csp.create_structure_generator(
+    'random', 
+    composition={'Si': 8, 'O': 16}, 
+    dimensionality=3,
+    volume_range=(100, 200),
+    constraints=[min_dist_constraint]
+)
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
