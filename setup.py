@@ -58,11 +58,12 @@ setup(
             "pytest-cov>=2.12.0",
         ],
     },
-    #entry_points={
-    #    "console_scripts": [
-    #        "opencsp=opencsp.cli.main:main",
-    #    ],
-    #},
+    entry_points={
+        "console_scripts": [
+            "ocsp_plot=opencsp.utils.plot_evoluation:main",
+            "ocsp_dump=opencsp.utils.dump_structure:main"
+        ],
+    },
     include_package_data=True,
     zip_safe=False,
     project_urls={
