@@ -1,6 +1,8 @@
 # opencsp/core/evaluator.py
 from typing import List, Callable, Optional, Any, Dict, Union
-
+from pymatgen.io.ase import AseAtomsAdaptor
+from ase import Atoms
+from pymatgen.core import Structure            
 from opencsp.core.individual import Individual
 from opencsp.core.calculator import Calculator
 
@@ -21,18 +23,21 @@ class Evaluator:
         self.fitness_function = fitness_function or (lambda indiv: -indiv.energy if indiv.energy is not None else None)
         self.constraints = constraints or []
         self.evaluation_count = 0
+
     def evaluate(self, individual: Individual) -> float:
         """评估单个个体"""
         print(f"Evaluating individual {individual.id}")
-        
+        structure = individual.structure
+        if isinstance(structure,Structure):
+           structure = AseAtomsAdaptor().get_atoms(structure)
         if individual.energy is None:
             try:
-                energy = self.calculator.calculate(individual.structure)
+                energy = self.calculator.calculate(structure)
                 print(f"  Calculated energy: {energy}")
                 individual.energy = energy
                 
                 # 计算其他属性
-                properties = self.calculator.get_properties(individual.structure)
+                properties = self.calculator.get_properties(structure)
                 individual.properties.update(properties)
                 
                 # 增加评估计数 - 确保这里是真正的累加
@@ -128,7 +133,7 @@ class Evaluator:
         print(f"Total evaluations so far: {self.evaluation_count}")
 
 
-    def evaluate_population(self, individuals: List[Individual], parallel: bool = True, n_jobs: int = -1) -> None:
+    def evaluate_population(self, individuals: List[Individual], parallel: bool = False, n_jobs: int = -1) -> None:
         """评估整个种群"""
         # 记录开始前的计数
         start_count = self.evaluation_count
