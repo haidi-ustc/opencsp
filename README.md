@@ -1,187 +1,170 @@
-# openCSP: Open-Source Crystal Structure Prediction Software
+# OpenCSP: Open-Source Crystal Structure Prediction
 
-openCSP is an open-source software for crystal structure prediction and optimization, supporting different dimensional systems (clusters, surfaces, crystals) and multiple global optimization algorithms (genetic algorithm, particle swarm optimization, basin hopping, etc.).
+## Overview
 
-## Main Features
+OpenCSP is a comprehensive, open-source Python library for crystal structure prediction and optimization. It provides a flexible framework for exploring and discovering new crystal structures using advanced computational methods.
 
-- **Multi-dimensional support**: Handles one-dimensional clusters, two-dimensional surfaces, and three-dimensional crystal structures
-- **Multiple optimization algorithms**: Supports genetic algorithms, particle swarm optimization, basin hopping algorithm, and more
-- **Flexible computational engine integration**: Supports ASE calculators and machine learning models
-- **Extensible plugin system**: Easily add new optimization algorithms and operation strategies
-- **Advanced API interface**: Provides a clean and easy-to-use programming interface
-- **Based on pymatgen and ASE**: Seamlessly integrates with two popular materials science computation libraries
+## Features
+
+### Key Capabilities
+- Multi-dimensional structure prediction (0D clusters, 2D surfaces, 3D crystals)
+- Multiple global optimization algorithms
+  - Genetic Algorithm (GA)
+  - Particle Swarm Optimization (PSO)
+- Flexible computational engine integration
+- Advanced structure generation and mutation strategies
+- Composition and symmetry constraints
+
+### Supported Dimensionalities
+- 0D: Atomic clusters
+- 2D: Surface structures
+- 3D: Bulk crystal structures
 
 ## Installation
 
+### Prerequisites
+- Python 3.9+
+- Dependencies:
+  - NumPy
+  - SciPy
+  - ASE (Atomic Simulation Environment)
+  - Pymatgen
+  - Optional: PyXtal for advanced symmetry generation
+
+### Install via pip
 ```bash
 pip install opencsp
 ```
 
-## Quick Start
+### Optional Dependencies
+```bash
+pip install pyxtal torch pymatgen
+```
+
+## Quick Start Example
 
 ```python
 from opencsp.api import OpenCSP
 from ase.calculators.emt import EMT
 
-# Initialize openCSP
-csp = OpenCSP()
+# Create OpenCSP instance
+csp = OpenCSP(optimizer_type='ga', dimensionality=3)
 
-# Create calculator and evaluator
+# Create energy calculator
 calculator = csp.create_calculator('ase', ase_calculator=EMT())
 evaluator = csp.create_evaluator(calculator)
 
-# Create structure generator
+# Define structure generator
 structure_gen = csp.create_structure_generator(
     'random', 
-    composition={'Si': 10}, 
-    dimensionality=1,
-    volume_range=(100, 300)
+    composition={'Si': 8, 'O': 16},
+    dimensionality=3
 )
 
-# Configure optimization algorithm
-ga_config = csp.create_optimization_config('ga')
-ga_config.set_param('evaluator', evaluator)
+# Configure optimization
+ga_config = csp.create_optimization_config()
 ga_config.set_param('crossover_rate', 0.8)
 ga_config.set_param('mutation_rate', 0.2)
 
-# Create and run a CSP job
+# Create and run optimization
 runner = csp.create_runner(
-    structure_generator=structure_gen, 
-    evaluator=evaluator, 
+    structure_generator=structure_gen,
+    evaluator=evaluator,
     optimization_config=ga_config,
-    population_size=20,
-    max_steps=50
+    population_size=50,
+    max_steps=100
 )
 
-# Get the best structure
+# Execute structure prediction
 best_structure = runner.run()
+print(f"Best structure energy: {best_structure.energy} eV")
 ```
 
-## Project Structure
+## Optimization Algorithms
 
-```
-openCSP/
-├── README.md
-├── setup.py
-├── requirements.txt
-├── docs/
-│   ├── index.md
-│   ├── tutorials/
-│   └── api/
-├── examples/
-│   ├── ga_cluster.py
-│   ├── pso_surface.py
-│   └── ml_crystal.py
-├── tests/
-│   ├── __init__.py
-│   ├── test_core/
-│   ├── test_algorithms/
-│   └── test_operations/
-└── opencsp/
-    ├── __init__.py
-    ├── api.py
-    ├── core/
-    │   ├── __init__.py
-    │   ├── individual.py
-    │   ├── population.py
-    │   ├── evaluator.py
-    │   ├── calculator.py
-    │   ├── structure_generator.py
-    │   └── constraints.py
-    ├── algorithms/
-    │   ├── __init__.py
-    │   ├── optimizer.py
-    │   ├── genetic.py
-    │   ├── pso.py
-    │   └── basin_hopping.py
-    ├── operations/
-    │   ├── __init__.py
-    │   ├── base.py
-    │   ├── crossover/
-    │   ├── mutation/
-    │   ├── position/
-    │   └── velocity/
-    ├── adapters/
-    │   ├── __init__.py
-    │   ├── dimension_aware.py
-    │   └── registry.py
-    ├── runners/
-    │   ├── __init__.py
-    │   └── csp_runner.py
-    ├── plugins/
-    │   ├── __init__.py
-    │   ├── manager.py
-    │   └── base.py
-    └── utils/
-        ├── __init__.py
-        ├── structure.py
-        ├── logger.py
-        └── serialization.py
-```
+### Genetic Algorithm
+- Crossover strategies
+  - Plane-cut crossover
+  - Lattice parameter crossover
+- Mutation operations
+  - Atomic displacement
+  - Lattice deformation
+  - Strain-based mutations
 
-## Advanced Usage
+### Particle Swarm Optimization
+- Position update strategies
+- Velocity-based exploration
 
-### Custom Calculator
+## Advanced Configuration
 
+### Constraints
 ```python
-# Using a custom calculator with openCSP
-from opencsp.api import OpenCSP
-from ase.calculators.lammps import LAMMPS
+# Minimum distance constraint
+min_dist_constraint = csp.create_constraint(
+    'minimum_distance', 
+    min_distance={'Si-Si': 2.2, 'Si-O': 1.6}
+)
 
-# Create LAMMPS calculator
-lammps_params = {"pair_style": "eam/alloy", "pair_coeff": ["* * Cu_mishin.eam.alloy Cu"]}
-calc = LAMMPS(parameters=lammps_params)
-
-# Create openCSP calculator wrapper
-csp = OpenCSP()
-calculator = csp.create_calculator('ase', ase_calculator=calc)
-```
-
-### Machine Learning Models
-
-```python
-# Using a machine learning model
-from opencsp.api import OpenCSP
-
-csp = OpenCSP()
-ml_calculator = csp.create_calculator('ml', model_path='path/to/model.pt')
-evaluator = csp.create_evaluator(ml_calculator)
-```
-
-### Custom Constraints
-
-```python
-# Adding constraints to structure generation
-from opencsp.api import OpenCSP
-from opencsp.core.constraints import MinimumDistanceConstraint
-
-csp = OpenCSP()
-
-# Define minimum atomic distances
-min_distances = {
-    'Si-Si': 2.2,  # Minimum Si-Si distance in Å
-    'Si-O': 1.6,   # Minimum Si-O distance in Å
-    'O-O': 2.0,    # Minimum O-O distance in Å
-    'default': 1.5  # Default minimum distance
-}
-
-# Create constraint
-min_dist_constraint = MinimumDistanceConstraint(min_distances)
-
-# Create structure generator with constraint
-structure_gen = csp.create_structure_generator(
-    'random', 
-    composition={'Si': 8, 'O': 16}, 
-    dimensionality=3,
-    volume_range=(100, 200),
-    constraints=[min_dist_constraint]
+# Symmetry constraint
+symmetry_constraint = csp.create_constraint(
+    'symmetry', 
+    target_spacegroup=225,  # Cubic space group
+    tolerance=0.1
 )
 ```
+
+## Computational Engines
+
+### Supported Calculators
+- ASE Calculators
+- Universal force fields
+
+## Visualization and Analysis
+
+### Output Formats
+- CIF files
+- JSON structure representation
+- Energy and fitness tracking
+- Optimization history logging
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+### How to Contribute
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+### Development Setup
+```bash
+git clone https://gitee.com/haidi-hfut/opencsp.git
+cd opencsp
+pip install -e .[dev]
+pytest
+```
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License
+
+## Citation
+
+If you use OpenCSP in your research, please cite:
+```
+OpenCSP Development Team. (2025). 
+OpenCSP: Open-Source Crystal Structure Prediction Software. 
+GitHub Repository, https://gitee.com/haidi-hfut/opencsp
+```
+
+## Contact
+
+- Email:  haidi@hfut.edu.cn
+- GitHub: [OpenCSP GitHub](https://gitee.com/haidi-hfut/opencsp)
+
+## Acknowledgments
+
+- Developed with support from the scientific computing community
+- Inspired by challenges in materials discovery and computational chemistry
+```
+

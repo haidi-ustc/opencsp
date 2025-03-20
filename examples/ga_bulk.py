@@ -51,8 +51,8 @@ def main():
         structure_generator=structure_gen,
         evaluator=evaluator,
         optimization_config=ga_config,
-        population_size=10, 
-        max_steps=3,
+        population_size=50, 
+        max_steps=50,
         output_dir='./csprun'
     )
     
