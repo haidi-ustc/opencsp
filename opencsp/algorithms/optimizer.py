@@ -147,7 +147,7 @@ class Optimizer(ABC, MSONable):
         # Main optimization loop
         try:
             for step in range(max_steps):
-                self.population.save(f"{output_dir}/popu-{step}.json")
+                self.population.save(f"{output_dir}/popu-{step}.json", strict=False)
                 logger.info(f"Starting optimization step {step+1}/{max_steps}")
                 self.step()
                 

@@ -31,7 +31,7 @@ class OpenCSP:
     
     def __init__(self,
                  optimizer_type: str = 'ga',
-                 dimensionality: int = 3
+                 dimensionality: int = 3,
                  variable_composition: bool = False ,
                  is_molecule: bool = False
                  ):

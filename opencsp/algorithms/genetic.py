@@ -146,6 +146,7 @@ class GeneticAlgorithm(Optimizer):
         Example:
             >>> ga.step()  # Perform one generation
         """
+        logger.info(f"-"*20)
         logger.info(f"Starting generation {self.population.generation + 1}")
         
         # 1. Select parents
