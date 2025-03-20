@@ -1,204 +1,287 @@
-# opencsp/operations/mutation/crystal.py
+"""
+Crystal Mutation Operations for Structural Optimization
+
+This module provides advanced mutation strategies for crystal structures,
+supporting both fixed and variable composition scenarios.
+"""
+
 import random
 import numpy as np
-from typing import Any, Optional, Dict, List, Tuple
+from typing import Any, Optional, Dict, List, Tuple, Union
 
 from opencsp.core.individual import Individual
 from opencsp.operations.base import StructureOperation
 from opencsp.utils.structure import get_structure_dimensionality
+from opencsp.utils.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 class CrystalMutation(StructureOperation):
-    """适用于晶体的变异操作"""
+    """
+    Advanced mutation operations for crystal structures.
     
-    def __init__(self, **kwargs):
+    Supports different mutation strategies with configurable composition constraints.
+    
+    Attributes:
+        dimensionality (int): Target structural dimensionality (3 for crystals)
+        mutation_strength (float): Intensity of structural mutations
+        method (str): Mutation method ('lattice', 'atomic_displacement', 'strain')
+        mutation_probability (float): Probability of mutation for each atom
+        variable_composition (bool): Allow composition changes during mutation
+    """
+    
+    def __init__(self, 
+                 dimensionality: int = 3, 
+                 mutation_strength: float = 0.2, 
+                 method: str = 'lattice', 
+                 mutation_probability: float = 0.2,
+                 variable_composition: bool = False,
+                 **kwargs):
         """
-        初始化晶体变异操作
+        Initialize crystal mutation operation.
         
         Args:
-            **kwargs: 其他参数
+            dimensionality: Target structural dimensionality (default: 3)
+            mutation_strength: Intensity of mutations (default: 0.2)
+            method: Mutation strategy (default: 'lattice')
+            mutation_probability: Probability of atom mutation (default: 0.2)
+            variable_composition: Allow composition changes (default: False)
+            **kwargs: Additional configuration parameters
         """
-        super().__init__(dimensionality=3, **kwargs)
-        self.mutation_strength = kwargs.get('mutation_strength', 0.2)
-        self.method = kwargs.get('method', 'lattice')
-        self.mutation_probability = kwargs.get('mutation_probability', 0.2)
-        
+        super().__init__(dimensionality=dimensionality, **kwargs)
+        self.mutation_strength = mutation_strength
+        self.method = method
+        self.mutation_probability = mutation_probability
+        self.variable_composition = variable_composition
+    
     def apply(self, individual: Individual, **kwargs) -> Individual:
         """
-        实现晶体结构的变异
+        Apply mutation to a crystal structure.
         
         Args:
-            individual: 要变异的个体
-            **kwargs: 其他参数，可以覆盖初始设置
-            
+            individual: Structure to mutate
+            **kwargs: Optional override parameters
+        
         Returns:
-            变异后的个体
+            Mutated individual
         """
-        # 使用传入的参数覆盖默认参数
-        strength = kwargs.get('step_size', kwargs.get('mutation_strength', self.mutation_strength))
+        # Update parameters from kwargs
+        strength = kwargs.get('mutation_strength', self.mutation_strength)
         method = kwargs.get('method', self.method)
         probability = kwargs.get('mutation_probability', self.mutation_probability)
+        variable_composition = kwargs.get('variable_composition', self.variable_composition)
         
-        # 确保结构是晶体
-        dim = get_structure_dimensionality(individual.structure)
-        if dim != 3:
-            raise ValueError(f"CrystalMutation只适用于晶体(3D)，但接收到的维度为{dim}")
+        # Select mutation strategy
+        mutation_methods = {
+            'lattice': self._lattice_mutation,
+            'atomic_displacement': self._atomic_displacement_mutation,
+            'strain': self._strain_mutation
+        }
         
-        # 根据方法选择不同的变异策略
-        if method == 'lattice':
-            return self._lattice_mutation(individual, strength)
-        elif method == 'atomic_displacement':
-            return self._atomic_displacement_mutation(individual, strength, probability)
-        elif method == 'strain':
-            return self._strain_mutation(individual, strength)
-        else:
-            raise ValueError(f"未知的变异方法：{method}")
+        if method not in mutation_methods:
+            raise ValueError(f"Unknown mutation method: {method}")
+        
+        # Apply selected mutation method
+        mutated_individual = mutation_methods[method](
+            individual, 
+            strength, 
+            probability, 
+            variable_composition
+        )
+        logger.info(f"mutated parent Individual : {individual.id}")
+        logger.info(f"mutated child Individual  : {mutated_individual.id}")
+
+        return mutated_individual
     
-    def _lattice_mutation(self, individual: Individual, strength: float) -> Individual:
+    def _lattice_mutation(self, 
+                           individual: Individual, 
+                           strength: float, 
+                           probability: float, 
+                           variable_composition: bool) -> Individual:
         """
-        晶格变异：扰动晶格参数
+        Mutate crystal lattice parameters.
         
         Args:
-            individual: 要变异的个体
-            strength: 变异强度
-            
-        Returns:
-            变异后的个体
-        """
-        # 复制个体
-        new_individual = individual.copy()
-        structure = new_individual.structure
+            individual: Structure to mutate
+            strength: Mutation intensity
+            probability: Mutation probability (unused in lattice mutation)
+            variable_composition: Allow composition changes
         
-        if hasattr(structure, 'lattice'):  # pymatgen Structure
-            # 获取当前晶格参数
+        Returns:
+            Mutated individual
+        """
+        # Create a copy of the individual to avoid modifying the original
+        mutated_individual = individual.copy()
+        structure = mutated_individual.structure
+        
+        # Pymatgen Structure handling
+        if hasattr(structure, 'lattice'):
+            # Current lattice parameters
             a, b, c, alpha, beta, gamma = structure.lattice.parameters
             
-            # 生成随机扰动（晶格长度）
+            # Random perturbations with controlled strength
             delta_a = a * (1.0 + (random.random() - 0.5) * 2 * strength)
             delta_b = b * (1.0 + (random.random() - 0.5) * 2 * strength)
             delta_c = c * (1.0 + (random.random() - 0.5) * 2 * strength)
             
-            # 生成随机扰动（晶格角度，较小）
-            angle_strength = strength * 0.3  # 角度变化应该较小
+            # Angle mutations (with smaller range)
+            angle_strength = strength * 0.3
             delta_alpha = alpha + (random.random() - 0.5) * 2 * angle_strength * 10.0
             delta_beta = beta + (random.random() - 0.5) * 2 * angle_strength * 10.0
             delta_gamma = gamma + (random.random() - 0.5) * 2 * angle_strength * 10.0
             
-            # 确保角度在合理范围内
+            # Constrain angles within reasonable ranges
             delta_alpha = min(max(delta_alpha, 60.0), 120.0)
             delta_beta = min(max(delta_beta, 60.0), 120.0)
             delta_gamma = min(max(delta_gamma, 60.0), 120.0)
             
-            # 创建新晶格
+            # Create new lattice
             from pymatgen.core import Lattice
             new_lattice = Lattice.from_parameters(delta_a, delta_b, delta_c, delta_alpha, delta_beta, delta_gamma)
             
-            # 更新结构
+            # Update structure lattice
             structure.lattice = new_lattice
-        else:  # ASE Atoms
-            # 获取当前晶胞
+        
+        # ASE Atoms handling
+        else:
             cell = structure.get_cell()
             
-            # 生成随机扰动矩阵
+            # Generate strain matrix
             strain_matrix = np.eye(3) + (np.random.rand(3, 3) - 0.5) * 2 * strength
             
-            # 应用扰动
+            # Apply strain
             new_cell = np.dot(cell, strain_matrix)
             
-            # 更新结构
+            # Update structure with scaled atoms
             structure.set_cell(new_cell, scale_atoms=True)
         
-        return new_individual
+        return mutated_individual
     
-    def _atomic_displacement_mutation(self, individual: Individual, strength: float, probability: float) -> Individual:
+    def _atomic_displacement_mutation(self, 
+                                      individual: Individual, 
+                                      strength: float, 
+                                      probability: float, 
+                                      variable_composition: bool) -> Individual:
         """
-        原子位移变异：随机移动部分原子
+        Mutate atomic positions with optional composition flexibility.
         
         Args:
-            individual: 要变异的个体
-            strength: 变异强度
-            probability: 变异概率
-            
-        Returns:
-            变异后的个体
-        """
-        # 复制个体
-        new_individual = individual.copy()
-        structure = new_individual.structure
+            individual: Structure to mutate
+            strength: Mutation displacement intensity
+            probability: Probability of mutating each atom
+            variable_composition: Allow composition changes
         
-        # 获取原子坐标
-        if hasattr(structure, 'sites'):  # pymatgen Structure
-            for i, site in enumerate(structure):
-                if random.random() < probability:
-                    # 生成随机位移
-                    displacement = np.random.normal(0, strength, 3)
-                    
-                    # 应用位移
-                    structure.translate_sites(i, displacement, frac_coords=False)
+        Returns:
+            Mutated individual
+        """
+        mutated_individual = individual.copy()
+        structure = mutated_individual.structure
+        
+        # Track original composition
+        original_composition = {}
+        if hasattr(structure, 'sites'):  # Pymatgen Structure
+            original_composition = dict(structure.composition.element_composition)
+            coords = [site.frac_coords for site in structure.sites]
+            species = [site.species_string for site in structure.sites]
         else:  # ASE Atoms
-            positions = structure.get_positions()
-            
-            # 随机移动原子
-            for i in range(len(positions)):
-                if random.random() < probability:
-                    # 生成随机位移
-                    displacement = np.random.normal(0, strength, 3)
-                    
-                    # 应用位移
-                    positions[i] += displacement
-            
-            # 更新结构
-            structure.set_positions(positions)
+            original_composition = {
+                symbol: list(structure.get_chemical_symbols()).count(symbol)
+                for symbol in set(structure.get_chemical_symbols())
+            }
+            coords = structure.get_scaled_positions()
+            species = structure.get_chemical_symbols()
         
-        return new_individual
+        # Perform atomic mutations
+        mutated_coords = []
+        mutated_species = []
+        
+        for i, (coord, atom_species) in enumerate(zip(coords, species)):
+            # Apply random displacement
+            if random.random() < probability:
+                displacement = np.random.normal(0, strength, 3)
+                new_coord = coord + displacement
+                
+                # Optional composition change
+                if variable_composition:
+                    # Small chance to swap or change atom type
+                    if random.random() < 0.1 and len(set(species)) > 1:
+                        other_species = [s for s in set(species) if s != atom_species]
+                        atom_species = random.choice(other_species)
+            else:
+                new_coord = coord
+                
+            mutated_coords.append(new_coord)
+            mutated_species.append(atom_species)
+        
+        # Reconstruct structure with new coordinates and species
+        if hasattr(structure, 'lattice'):  # Pymatgen Structure
+            from pymatgen.core import Structure
+            mutated_structure = Structure(
+                structure.lattice, 
+                mutated_species, 
+                mutated_coords, 
+                coords_are_cartesian=False
+            )
+        else:  # ASE Atoms
+            import copy
+            mutated_structure = copy.deepcopy(structure)
+            mutated_structure.set_scaled_positions(mutated_coords)
+            mutated_structure.set_chemical_symbols(mutated_species)
+        
+        # Update individual with new structure
+        mutated_individual.structure = mutated_structure
+        
+        return mutated_individual
     
-    def _strain_mutation(self, individual: Individual, strength: float) -> Individual:
+    def _strain_mutation(self, 
+                         individual: Individual, 
+                         strength: float, 
+                         probability: float, 
+                         variable_composition: bool) -> Individual:
         """
-        应变变异：应用随机应变张量
+        Apply strain mutation to the crystal structure.
         
         Args:
-            individual: 要变异的个体
-            strength: 变异强度
-            
-        Returns:
-            变异后的个体
-        """
-        # 复制个体
-        new_individual = individual.copy()
-        structure = new_individual.structure
+            individual: Structure to mutate
+            strength: Mutation strain intensity
+            probability: Unused in strain mutation
+            variable_composition: Unused in strain mutation
         
-        # 生成对称应变张量
-        # 注意：应变张量应该是对称的，以确保体积变化合理
+        Returns:
+            Mutated individual
+        """
+        mutated_individual = individual.copy()
+        structure = mutated_individual.structure
+        
+        # Generate symmetric strain tensor
         strain = np.zeros((3, 3))
         for i in range(3):
             for j in range(i, 3):
                 if i == j:
-                    # 对角元素（拉伸/压缩）
+                    # Diagonal elements (stretching/compression)
                     strain[i, j] = (random.random() - 0.5) * 2 * strength
                 else:
-                    # 非对角元素（剪切）
+                    # Off-diagonal elements (shear)
                     strain[i, j] = (random.random() - 0.5) * 2 * strength * 0.5
                     strain[j, i] = strain[i, j]
         
-        # 转换为形变矩阵
+        # Create deformation matrix
         deformation = np.eye(3) + strain
         
-        if hasattr(structure, 'lattice'):  # pymatgen Structure
-            # 应用应变到晶格
+        # Pymatgen Structure handling
+        if hasattr(structure, 'lattice'):
             matrix = structure.lattice.matrix
             new_matrix = np.dot(matrix, deformation)
             
-            # 创建新晶格
             from pymatgen.core import Lattice
             new_lattice = Lattice(new_matrix)
-            
-            # 更新结构
-            structure.lattice =new_lattice
-        else:  # ASE Atoms
-            # 应用应变到晶胞
+            structure.lattice = new_lattice
+        
+        # ASE Atoms handling
+        else:
             cell = structure.get_cell()
             new_cell = np.dot(cell, deformation)
-            
-            # 更新结构
             structure.set_cell(new_cell, scale_atoms=True)
         
-        return new_individual
+        return mutated_individual
