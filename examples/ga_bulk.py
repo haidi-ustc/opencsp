@@ -16,7 +16,7 @@ def main():
     logger = get_logger(__name__)
     
     # Initialize OpenCSP
-    csp = OpenCSP()
+    csp = OpenCSP('ga',dimensionality=3)
     
     try:
         # Setup calculator
@@ -37,12 +37,11 @@ def main():
     # Create structure generator
     structure_gen = csp.create_structure_generator(
         'symmetry',
-        composition={'Si': 4, "O": 8},  
-        dimensionality=3  
+        composition={'Si': 4, "O": 8}
     )
     
     # Configure GA optimization
-    ga_config = csp.create_optimization_config('ga', dimensionality=3)
+    ga_config = csp.create_optimization_config()
     ga_config.set_param('evaluator', evaluator)
     ga_config.set_param('crossover_rate', 0.8)
     ga_config.set_param('mutation_rate', 0.2)
