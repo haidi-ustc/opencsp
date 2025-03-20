@@ -99,7 +99,7 @@ class Evaluator(MSONable):
         if individual.energy is None:
             try:
                 energy = self.calculator.calculate(structure)
-                logger.info(f"Individual {individual.id}: calculated energy = {energy:.6f}")
+                logger.info(f"Individual {individual.id}: energy: {energy:.6f} formula: {individual.structure.formula} ")
                 individual.energy = energy
                 
                 # Calculate other properties
