@@ -20,6 +20,43 @@ OpenCSP is a comprehensive, open-source Python library for crystal structure pre
 - 2D: Surface structures
 - 3D: Bulk crystal structures
 
+### Framework
+```
++------------------+     +------------------+     +------------------+
+|                  |     |                  |     |                  |
+|    OpenCSP API   |<--->|  PluginManager   |<--->|     Plugins      |
+|                  |     |                  |     |                  |
++------------------+     +------------------+     +------------------+
+         |                        |
+         v                        v
++------------------+     +------------------+     +------------------+
+|                  |     |                  |     |                  |
+|    CSPRunner     |<--->| OptimizerFactory |<--->| OperationRegistry|
+|                  |     |                  |     |                  |
++------------------+     +------------------+     +------------------+
+         |                        |                        |
+         v                        v                        v
++------------------+     +------------------+     +------------------+
+|                  |     |                  |     |  DimensionAware  |
+| StructureGenerator|     |    Optimizer    |<--->|    Adapters      |
+|                  |     | (GA, PSO, etc.)  |     |                  |
++------------------+     +------------------+     +------------------+
+         |                        |                        |
+         v                        v                        v
++------------------+     +------------------+     +------------------+
+|                  |     |                  |     |   Dimension-     |
+|   Constraints    |     |   Population/    |<--->|   Specific       |
+|                  |     |    Particles     |     |   Operations     |
++------------------+     +------------------+     +------------------+
+                                  |
+                                  v
++------------------+     +------------------+     +------------------+
+|                  |     |                  |     |                  |
+|   Individual     |<--->|    Evaluator    |<--->|   Calculator     |
+|                  |     |                  |     | (DFT, ML, etc.)  |
++------------------+     +------------------+     +------------------+
+```
+
 ## Installation
 
 ### Prerequisites
