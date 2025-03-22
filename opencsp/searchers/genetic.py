@@ -14,7 +14,7 @@ from typing import List, Dict, Any, Optional, Type, ClassVar
 from monty.json import MSONable
 from monty.serialization import dumpfn,loadfn
 
-from opencsp.algorithms.optimizer import Optimizer
+from opencsp.searchers.base import Searcher
 from opencsp.core.evaluator import Evaluator
 from opencsp.core.individual import Individual
 from opencsp.core.population import Population
@@ -24,7 +24,7 @@ from opencsp.adapters.dimension_aware import DimensionAwareAdapter
 # Configure logger
 logger = logging.getLogger(__name__)
 
-class GeneticAlgorithm(Optimizer):
+class GA(Searcher):
     """
     Genetic Algorithm implementation for structure optimization.
     
@@ -61,11 +61,11 @@ class GeneticAlgorithm(Optimizer):
         Example:
             >>> from opencsp.core.evaluator import Evaluator
             >>> from opencsp.adapters.dimension_aware import DimensionAwareAdapter
-            >>> from opencsp.algorithms.genetic import GeneticAlgorithm
+            >>> from opencsp.searchers.genetic import GA
             >>> evaluator = Evaluator(calculator)
             >>> crossover_adapter = DimensionAwareAdapter()
             >>> mutation_adapter = DimensionAwareAdapter()
-            >>> ga = GeneticAlgorithm(
+            >>> ga = GA(
             ...     evaluator, 
             ...     crossover_adapter=crossover_adapter,
             ...     mutation_adapter=mutation_adapter,
@@ -82,7 +82,7 @@ class GeneticAlgorithm(Optimizer):
         self.mutation_rate = kwargs.get('mutation_rate', 0.2)
         self.elitism = kwargs.get('elitism', 1)
         
-        logger.info(f"Initialized GeneticAlgorithm with: selection={self.selection_method}, "
+        logger.info(f"Initialized GA with: selection={self.selection_method}, "
                    f"crossover_rate={self.crossover_rate}, mutation_rate={self.mutation_rate}, "
                    f"elitism={self.elitism}")
         
@@ -282,7 +282,7 @@ class GeneticAlgorithm(Optimizer):
             
     def as_dict(self) -> Dict[str, Any]:
         """
-        Convert the GeneticAlgorithm to a JSON-serializable dictionary.
+        Convert the GA to a JSON-serializable dictionary.
         
         Returns:
             Dictionary representation of the genetic algorithm
@@ -306,15 +306,15 @@ class GeneticAlgorithm(Optimizer):
         return d
     
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> 'GeneticAlgorithm':
+    def from_dict(cls, d: Dict[str, Any]) -> 'GA':
         """
-        Create a GeneticAlgorithm from a dictionary.
+        Create a GA from a dictionary.
         
         Args:
             d: Dictionary containing GA data
             
         Returns:
-            Reconstructed GeneticAlgorithm instance
+            Reconstructed GA instance
             
         Note:
             This method reconstructs the GA's parameters but not its state.
@@ -322,7 +322,7 @@ class GeneticAlgorithm(Optimizer):
             
         Example:
             >>> ga_dict = ga.as_dict()
-            >>> reconstructed_ga = GeneticAlgorithm.from_dict(ga_dict)
+            >>> reconstructed_ga = GA.from_dict(ga_dict)
         """
         # This can only partially restore the GA without a proper evaluator
         # In practice, you would need to provide an evaluator separately
@@ -339,7 +339,7 @@ class GeneticAlgorithm(Optimizer):
         # Create the GA instance
         # Note: This requires an evaluator, which must be provided externally
         # This is a limitation of serializing optimizers that depend on complex objects
-        logger.warning("Reconstructing GeneticAlgorithm requires an Evaluator to be provided")
+        logger.warning("Reconstructing GA requires an Evaluator to be provided")
         
         if "evaluator" in params:
             evaluator = params.pop("evaluator")

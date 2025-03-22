@@ -4,7 +4,7 @@ CSP Runner module for executing crystal structure prediction workflows.
 
 This module provides the CSPRunner class that coordinates the entire CSP process,
 including structure generation, evaluation, and optimization. It also includes the
-OptimizationConfig class for configuring optimization algorithms.
+OptimizationConfig class for configuring optimization searchers.
 """
 
 import os
@@ -16,7 +16,7 @@ from monty.json import MSONable, MontyEncoder
 from opencsp.core.evaluator import Evaluator
 from opencsp.core.structure_generator import StructureGenerator
 from opencsp.adapters.registry import OperationRegistry
-from opencsp.algorithms.optimizer import OptimizerFactory, Optimizer
+from opencsp.searchers.base import SearcherFactory, Searcher
 
 # Configure logger
 from opencsp.utils.logging import get_logger
@@ -26,11 +26,11 @@ T = TypeVar('T', bound='OptimizationConfig')
 
 class OptimizationConfig(MSONable):
     """
-    Configuration class for optimization algorithms and operations.
+    Configuration class for optimization searchers and operations.
     
     This class manages algorithm parameters and operation strategies for different
     dimensionalities, providing a convenient builder interface for setting up
-    optimization algorithms.
+    optimization searchers.
     
     Attributes:
         optimizer_type (str): Type of optimizer ('ga', 'pso', etc.)
@@ -105,7 +105,7 @@ class OptimizationConfig(MSONable):
         logger.debug(f"Set {operation_type} operation for dimensionality {dim}")
         return self
         
-    def build(self, registry: OperationRegistry, factory: OptimizerFactory) -> Optimizer:
+    def build(self, registry: OperationRegistry, factory: SearcherFactory) -> Searcher:
         """
         Build an optimizer with the specified configuration.
         
@@ -116,7 +116,7 @@ class OptimizationConfig(MSONable):
         
         Args:
             registry: Operation registry
-            factory: Optimizer factory
+            factory: Searcher factory
             
         Returns:
             Configured optimizer instance
@@ -248,7 +248,7 @@ class CSPRunner(MSONable):
         evaluator (Evaluator): Energy and fitness evaluator
         optimization_config (OptimizationConfig): Configuration for the optimizer
         operation_registry (OperationRegistry): Registry of operations
-        optimizer_factory (OptimizerFactory): Factory for creating optimizers
+        optimizer_factory (SearcherFactory): Factory for creating optimizers
         population_size (int): Size of the population
         max_steps (int): Maximum number of optimization steps
         callbacks (List[Callable]): Callback functions for monitoring
@@ -260,7 +260,7 @@ class CSPRunner(MSONable):
                  evaluator: Evaluator, 
                  optimization_config: Optional[OptimizationConfig] = None,
                  operation_registry: Optional[OperationRegistry] = None,
-                 optimizer_factory: Optional[OptimizerFactory] = None,
+                 optimizer_factory: Optional[SearcherFactory] = None,
                  **kwargs):
         """
         Initialize a CSP runner.
@@ -302,14 +302,14 @@ class CSPRunner(MSONable):
         
         # Create operation registry and optimizer factory if not provided
         self.operation_registry = operation_registry or OperationRegistry()
-        self.optimizer_factory = optimizer_factory or OptimizerFactory()
+        self.optimizer_factory = optimizer_factory or SearcherFactory()
         self.optimizer_factory.operation_registry = self.operation_registry
         
         # Register optimizers
-        from opencsp.algorithms.genetic import GeneticAlgorithm
-        from opencsp.algorithms.pso import ParticleSwarmOptimization
+        from opencsp.searchers.genetic import GA
+        from opencsp.searchers.pso import PSO
         if self.optimization_config.optimizer_type =='ga':
-           self.optimizer_factory.register_optimizer('ga', GeneticAlgorithm)
+           self.optimizer_factory.register_optimizer('ga', GA)
 
         elif self.optimization_config.optimizer_type =='pso':
              self.optimizer_factory.register_optimizer('pso', ParticleSwarmOptimization)
@@ -319,7 +319,7 @@ class CSPRunner(MSONable):
         # Set run parameters
         self.population_size = kwargs.get('population_size', 50)
         self.max_steps = kwargs.get('max_steps', 100)
-        self.callbacks: List[Callable[[Optimizer, int], None]] = kwargs.get('callbacks', [])
+        self.callbacks: List[Callable[[Searcher, int], None]] = kwargs.get('callbacks', [])
         self.output_dir = kwargs.get('output_dir', './csprun')
         self.results_dir = os.path.join(self.output_dir, 'results')
         
@@ -382,7 +382,7 @@ class CSPRunner(MSONable):
         logger.info(f"Set maximum steps to {steps}")
         return self
         
-    def add_callback(self, callback: Callable[[Optimizer, int], None]) -> 'CSPRunner':
+    def add_callback(self, callback: Callable[[Searcher, int], None]) -> 'CSPRunner':
         """
         Add a callback function for monitoring optimization progress.
         
@@ -454,7 +454,7 @@ class CSPRunner(MSONable):
             
         return best_individual
 
-    def _save_results(self, optimizer: Optimizer, best_individual: Any) -> None:
+    def _save_results(self, optimizer: Searcher, best_individual: Any) -> None:
         """
         Save optimization results to files.
         
@@ -462,7 +462,7 @@ class CSPRunner(MSONable):
         and configuration to files in the results directory.
         
         Args:
-            optimizer: Optimizer instance used for the run
+            optimizer: Searcher instance used for the run
             best_individual: Best individual found during optimization
             
         Example:

@@ -214,7 +214,7 @@ class Individual(MSONable):
         Returns:
             str: String representation
         """
-        return f"Individual(id={self.id}, energy={self.energy}, fitness={self.fitness}, dimensionality={self.dimensionality})"
+        return f"Individual(id={self.id}, energy={self.energy}, fitness={self.fitness}, dim={self.dimensionality})"
     
     def __repr__(self) -> str:
         """

@@ -1,14 +1,14 @@
 import random
 from typing import List, Dict, Any, Optional
 
-from opencsp.algorithms.optimizer import Optimizer
+from opencsp.searchers.base import Searcher
 from opencsp.core.evaluator import Evaluator
 from opencsp.core.individual import Individual
 from opencsp.core.structure_generator import StructureGenerator
 from opencsp.adapters.dimension_aware import DimensionAwareAdapter
 from opencsp.utils.structure import get_structure_dimensionality
 
-class ParticleSwarmOptimization(Optimizer):
+class PSO(Searcher):
     """
     粒子群算法实现，支持不同维度的结构操作
     """
@@ -60,7 +60,7 @@ class ParticleSwarmOptimization(Optimizer):
                 self.velocities.append(initialize_cluster_velocity(p.structure))
             elif dim == 2:
                 from opencsp.operations.velocity.surface import initialize_surface_velocity
-                # opencsp/algorithms/pso.py (continued)
+                # opencsp/searchers/pso.py (continued)
                 self.velocities.append(initialize_surface_velocity(p.structure))
             elif dim == 3:
                 from opencsp.operations.velocity.crystal import initialize_crystal_velocity

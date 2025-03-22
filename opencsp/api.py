@@ -16,7 +16,7 @@ from opencsp.core.structure_generator import (
 )
 from opencsp.core.constraints import Constraint, MinimumDistanceConstraint, SymmetryConstraint
 from opencsp.adapters.registry import OperationRegistry
-from opencsp.algorithms.optimizer import OptimizerFactory
+from opencsp.searchers.base import SearcherFactory
 from opencsp.runners.csp_runner import CSPRunner, OptimizationConfig
 from opencsp.plugins.manager import PluginManager
 from opencsp.utils.logging import get_logger
@@ -55,7 +55,7 @@ class OpenCSP:
         
         # Create core components
         self.operation_registry = OperationRegistry()
-        self.optimizer_factory = OptimizerFactory()
+        self.optimizer_factory = SearcherFactory()
         self.optimizer_factory.operation_registry = self.operation_registry
         self.plugin_manager = PluginManager(self.operation_registry, self.optimizer_factory)
         
@@ -67,11 +67,11 @@ class OpenCSP:
         self.logger.info("Registering default components")
         
         if self.optimizer_type == 'ga':
-           from opencsp.algorithms.genetic import GeneticAlgorithm
-           self.optimizer_factory.register_optimizer('ga', GeneticAlgorithm)
+           from opencsp.searchers.genetic import GA
+           self.optimizer_factory.register_optimizer('ga', GA)
         elif self.optimizer_type == 'pso':
-           from opencsp.algorithms.pso import ParticleSwarmOptimization
-           self.optimizer_factory.register_optimizer('pso', ParticleSwarmOptimization)
+           from opencsp.searchers.pso import PSO
+           self.optimizer_factory.register_optimizer('pso', PSO)
         
         self._register_operations()
 

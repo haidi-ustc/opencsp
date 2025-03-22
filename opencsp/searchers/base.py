@@ -1,10 +1,9 @@
-# opencsp/algorithms/optimizer.py
 """
-This module contains the abstract base Optimizer class and OptimizerFactory.
+This module contains the abstract base Searcher class and SearcherFactory.
 
-The Optimizer class provides a common interface for all optimization algorithms
+The Searcher class provides a common interface for all optimization algorithms
 in the openCSP framework, including genetic algorithms, particle swarm optimization,
-and other global optimization methods. The OptimizerFactory facilitates creating
+and other global optimization methods. The SearcherFactory facilitates creating
 and configuring optimizer instances with appropriate adapters.
 """
 
@@ -24,7 +23,7 @@ from opencsp.core.structure_generator import StructureGenerator
 logger = logging.getLogger(__name__)
 T = TypeVar('T', bound=Individual)
 
-class Optimizer(ABC, MSONable):
+class Searcher(ABC, MSONable):
     """
     Abstract base class for optimization algorithms.
     
@@ -93,7 +92,7 @@ class Optimizer(ABC, MSONable):
     def run(self, structure_generator: StructureGenerator,
             population_size: int = 50, 
             max_steps: int = 100,
-            callbacks: Optional[List[Callable[['Optimizer', int], None]]] = None,
+            callbacks: Optional[List[Callable[['Searcher', int], None]]] = None,
             output_dir: Optional[str] = None) -> T:
         """
         Run the optimization algorithm.
@@ -260,12 +259,12 @@ class Optimizer(ABC, MSONable):
         return d
     
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> 'Optimizer':
+    def from_dict(cls, d: Dict[str, Any]) -> 'Searcher':
         """
         Create an optimizer from a dictionary.
         
         This method is required by MSONable for deserialization. Note that since
-        Optimizer is an abstract class, this method should be implemented by subclasses
+        Searcher is an abstract class, this method should be implemented by subclasses
         to properly reconstruct optimizer-specific attributes.
         
         Args:
@@ -277,10 +276,10 @@ class Optimizer(ABC, MSONable):
         Raises:
             NotImplementedError: This method must be implemented by subclasses
         """
-        raise NotImplementedError("from_dict must be implemented by Optimizer subclasses")
+        raise NotImplementedError("from_dict must be implemented by Searcher subclasses")
 
 
-class OptimizerFactory:
+class SearcherFactory:
     """
     Factory class for creating and configuring optimizers.
     
@@ -289,7 +288,7 @@ class OptimizerFactory:
     structure operations.
     
     Attributes:
-        registered_optimizers (Dict[str, Type[Optimizer]]): Registered optimizer classes
+        registered_optimizers (Dict[str, Type[Searcher]]): Registered optimizer classes
         operation_registry: Registry for dimension-specific operations
     """
     
@@ -298,21 +297,21 @@ class OptimizerFactory:
         Initialize the optimizer factory.
         
         Example:
-            >>> factory = OptimizerFactory()
+            >>> factory = SearcherFactory()
             >>> factory.register_optimizer('ga', GeneticAlgorithm)
             >>> factory.register_optimizer('pso', ParticleSwarmOptimization)
         """
         self.registered_optimizers = {}
         self.operation_registry = None
-        logger.debug("Initialized OptimizerFactory")
+        logger.debug("Initialized SearcherFactory")
         
-    def register_optimizer(self, name: str, optimizer_class: Type[Optimizer]) -> None:
+    def register_optimizer(self, name: str, optimizer_class: Type[Searcher]) -> None:
         """
         Register an optimizer class.
         
         Args:
             name: Name to register the optimizer under (e.g., 'ga', 'pso')
-            optimizer_class: Optimizer class to register
+            optimizer_class: Searcher class to register
             
         Example:
             >>> from opencsp.algorithms.genetic import GeneticAlgorithm
@@ -321,7 +320,7 @@ class OptimizerFactory:
         self.registered_optimizers[name] = optimizer_class
         logger.debug(f"Registered optimizer: {name} -> {optimizer_class.__name__}")
         
-    def create_optimizer(self, name: str, evaluator: Evaluator, **kwargs) -> Optimizer:
+    def create_optimizer(self, name: str, evaluator: Evaluator, **kwargs) -> Searcher:
         """
         Create an optimizer instance.
         
@@ -329,7 +328,7 @@ class OptimizerFactory:
         setting up appropriate adapters for dimension-specific operations.
         
         Args:
-            name: Optimizer name (e.g., 'ga', 'pso')
+            name: Searcher name (e.g., 'ga', 'pso')
             evaluator: Evaluator instance
             **kwargs: Additional parameters for the optimizer
             
@@ -434,7 +433,7 @@ class OptimizerFactory:
         }
     
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> 'OptimizerFactory':
+    def from_dict(cls, d: Dict[str, Any]) -> 'SearcherFactory':
         """
         Create an optimizer factory from a dictionary.
         
