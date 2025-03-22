@@ -8,7 +8,7 @@ offering factory methods for creating various components needed for crystal stru
 from typing import Dict, Any, Optional, List, Union
 import os
 
-from opencsp.core.calculator import ASECalculatorWrapper, MLCalculator
+from opencsp.core.calculator import ASECalculatorWrapper
 from opencsp.core.evaluator import Evaluator
 from opencsp.core.structure_generator import (
     RandomStructureGenerator, 
@@ -124,7 +124,7 @@ class OpenCSP:
         self.operation_registry.register_velocity(SurfaceVelocityUpdate(), 2)
         self.operation_registry.register_velocity(CrystalVelocityUpdate(), 3)
         
-    def create_calculator(self, calculator_type: str, **kwargs) -> Union[ASECalculatorWrapper, MLCalculator]:
+    def create_calculator(self, calculator_type: str, **kwargs) -> ASECalculatorWrapper:
         """
         Create a calculator for energy evaluation.
         
@@ -144,12 +144,10 @@ class OpenCSP:
         
         if calculator_type == 'ase':
             return ASECalculatorWrapper(kwargs.pop('ase_calculator', None), **kwargs)
-        elif calculator_type == 'ml':
-            return MLCalculator(**kwargs)
         else:
             raise ValueError(f"Unknown calculator type: {calculator_type}")
             
-    def create_evaluator(self, calculator: Union[ASECalculatorWrapper, MLCalculator], 
+    def create_evaluator(self, calculator: ASECalculatorWrapper, 
                          constraints: Optional[List[Constraint]] = None,
                          **kwargs) -> Evaluator:
         """

@@ -74,7 +74,7 @@ from opencsp.api import OpenCSP
 from opencsp.core.individual import Individual
 from opencsp.core.evaluator import Evaluator
 from opencsp.core.structure_generator import StructureGenerator
-from opencsp.core.calculator import ASECalculatorWrapper, MLCalculator
+from opencsp.core.calculator import ASECalculatorWrapper
 from opencsp.core.constraints import MinimumDistanceConstraint, SymmetryConstraint
 from opencsp.runners.csp_runner import CSPRunner, OptimizationConfig
 
@@ -90,7 +90,6 @@ __all__ = [
     
     # Calculators
     'ASECalculatorWrapper',
-    'MLCalculator',
     
     # Constraints
     'MinimumDistanceConstraint',

@@ -6,7 +6,7 @@
 from opencsp.core.individual import Individual
 from opencsp.core.population import Population
 from opencsp.core.evaluator import Evaluator
-from opencsp.core.calculator import Calculator, ASECalculatorWrapper, MLCalculator
+from opencsp.core.calculator import Calculator, ASECalculatorWrapper
 from opencsp.core.structure_generator import StructureGenerator, RandomStructureGenerator, SymmetryBasedStructureGenerator
 from opencsp.core.constraints import Constraint, MinimumDistanceConstraint, SymmetryConstraint
 
@@ -16,7 +16,6 @@ __all__ = [
     'Evaluator',
     'Calculator',
     'ASECalculatorWrapper',
-    'MLCalculator',
     'StructureGenerator',
     'RandomStructureGenerator',
     'SymmetryBasedStructureGenerator',
