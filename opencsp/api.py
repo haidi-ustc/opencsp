@@ -177,7 +177,6 @@ class OpenCSP:
             composition: Chemical composition as {element: count}
             **kwargs: Additional parameters for the generator
                 Common parameters:
-                - dimensionality: Structure dimension (1, 2, or 3)
                 - volume_range: Tuple of (min_volume, max_volume)
                 - constraints: List of constraints
                 For 'symmetry':

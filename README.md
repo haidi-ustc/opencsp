@@ -57,8 +57,7 @@ evaluator = csp.create_evaluator(calculator)
 # Define structure generator
 structure_gen = csp.create_structure_generator(
     'random', 
-    composition={'Si': 8, 'O': 16},
-    dimensionality=3
+    composition={'Si': 8, 'O': 16}
 )
 
 # Configure optimization
