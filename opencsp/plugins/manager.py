@@ -3,14 +3,14 @@ from typing import Dict, Any, Type
 
 from opencsp.plugins.base import Plugin
 from opencsp.adapters.registry import OperationRegistry
-from opencsp.algorithms.optimizer import OptimizerFactory
+from opencsp.searchers.base import SearcherFactory
 
 class PluginManager:
     """
     插件管理器，用于动态加载和注册操作和优化器
     """
     
-    def __init__(self, operation_registry: OperationRegistry, optimizer_factory: OptimizerFactory):
+    def __init__(self, operation_registry: OperationRegistry, optimizer_factory: SearcherFactory):
         """
         初始化插件管理器
         

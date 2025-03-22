@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict
 
 from opencsp.adapters.registry import OperationRegistry
-from opencsp.algorithms.optimizer import OptimizerFactory
+from opencsp.searchers.base import SearcherFactory
 
 class Plugin(ABC):
     """
@@ -15,7 +15,7 @@ class Plugin(ABC):
         self.params = kwargs
         
     @abstractmethod
-    def initialize(self, operation_registry: OperationRegistry, optimizer_factory: OptimizerFactory) -> None:
+    def initialize(self, operation_registry: OperationRegistry, optimizer_factory: SearcherFactory) -> None:
         """
         初始化插件并注册其组件
         

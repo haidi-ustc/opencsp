@@ -352,7 +352,7 @@ class Individual(MSONable):
             >>> ind.get_formula()  # 'Cu4'
         """
         if hasattr(self.structure, 'composition'):  # pymatgen Structure
-            return self.structure.composition.reduced_formula
+            return self.structure.composition.formula.replace(" ","")
         elif hasattr(self.structure, 'get_chemical_formula'):  # ASE Atoms
             return self.structure.get_chemical_formula()
         else:
