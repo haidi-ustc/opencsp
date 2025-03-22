@@ -74,7 +74,6 @@ coverage.xml
 .idea/
 
 # Ignore testing and deployment related files
-test_*.py
 tox.ini
 *.log
 
