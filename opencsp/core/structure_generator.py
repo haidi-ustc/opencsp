@@ -12,6 +12,7 @@ import traceback
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any, Tuple, Union, Type, TypeVar
 from opencsp.utils.io import suppress_output, capture_output
+from opencsp.core.composition_manager import CompositionManager
 
 import numpy as np
 from monty.json import MSONable
@@ -34,7 +35,9 @@ class StructureGenerator(ABC, MSONable):
         constraints (List[Any]): Structure constraints to apply during generation
     """
     
-    def __init__(self, composition: Dict[str, int], constraints: Optional[List[Any]] = None):
+    def __init__(self, composition: Dict[str, int],
+                 composition_manager: Optional[CompositionManager] = None,
+                 constraints: Optional[List[Any]] = None):
         """
         Initialize a structure generator.
         
@@ -49,7 +52,19 @@ class StructureGenerator(ABC, MSONable):
             >>> constraints = [MinimumDistanceConstraint({'Si-O': 1.6, 'O-O': 2.0})]
         """
         self.composition = composition
+        self.composition_manager = composition_manager
         self.constraints = constraints or []
+
+    def get_composition(self) -> Dict[str, int]:
+        """
+        Get composition for structure generation.
+        
+        Returns:
+            Dictionary mapping element symbols to counts
+        """
+        if self.composition_manager:
+            return self.composition_manager.generate_random_composition()
+        return self.composition
         
     @abstractmethod
     def generate(self, n: int = 1) -> List[Any]:
@@ -139,8 +154,11 @@ class RandomStructureGenerator(StructureGenerator):
         constraints (List[Any]): Structure constraints to apply during generation
     """
     
-    def __init__(self, composition: Dict[str, int], volume_range: Tuple[float, float] = (100, 500), 
-                 dimensionality: int = 3, **kwargs):
+    def __init__(self, composition: Dict[str, int],
+                 volume_range: Tuple[float, float] = (100, 500), 
+                 dimensionality: int = 3, 
+                 composition_manager: Optional[CompositionManager] = None,
+                 **kwargs):
         """
         Initialize a random structure generator.
         
@@ -163,7 +181,7 @@ class RandomStructureGenerator(StructureGenerator):
             ... )
             >>> cluster = generator.generate(1)[0]
         """
-        super().__init__(composition, kwargs.get('constraints'))
+        super().__init__(composition, composition_manager,  kwargs.get('constraints'))
         self.volume_range = volume_range
         self.dimensionality = dimensionality
         self.min_distance = kwargs.get('min_distance', 1.5)  # Default minimum atomic distance
@@ -195,14 +213,15 @@ class RandomStructureGenerator(StructureGenerator):
         
         while len(structures) < n and attempts < max_attempts:
             attempts += 1
-            
+
+            current_composition = self.get_composition() 
             # Generate structure based on dimensionality
             if self.dimensionality == 1:
-                structure = self._generate_1d()
+                structure = self._generate_1d(current_composition)
             elif self.dimensionality == 2:
-                structure = self._generate_2d()
+                structure = self._generate_2d(current_composition)
             else:  # 3D
-                structure = self._generate_3d()
+                structure = self._generate_3d(current_composition)
                 
             # Check if structure generation was successful
             if structure is None:
@@ -230,7 +249,7 @@ class RandomStructureGenerator(StructureGenerator):
         
         return structures
     
-    def _generate_1d(self) -> Any:
+    def _generate_1d(self, composition: Dict[str, int]) -> Any:
         """
         Generate a 1D structure (cluster).
         
@@ -274,7 +293,7 @@ class RandomStructureGenerator(StructureGenerator):
             logger.info(f"Error generating 1D structure: {e}")
             return None
     
-    def _generate_2d(self) -> Any:
+    def _generate_2d(self, composition: Dict[str, int]) -> Any:
         """
         Generate a 2D structure (surface).
         
@@ -348,7 +367,7 @@ class RandomStructureGenerator(StructureGenerator):
             logger.info(f"Error generating 2D structure: {e}")
             return None
     
-    def _generate_3d(self) -> Any:
+    def _generate_3d(self, composition: Dict[str, int]) -> Any:
         """
         Generate a 3D structure (crystal).
         
@@ -526,8 +545,12 @@ class SymmetryBasedStructureGenerator(StructureGenerator):
         constraints (List[Any]): Structure constraints to apply during generation
     """
     
-    def __init__(self, composition: Dict[str, int], spacegroup: Optional[int] = None, 
-                 lattice_vectors: Optional[List[List[float]]] = None, dimensionality: int = 3, **kwargs):
+    def __init__(self,composition: Dict[str, int], 
+                 spacegroup: Optional[int] = None, 
+                 lattice_vectors: Optional[List[List[float]]] = None, 
+                 dimensionality: int = 3,
+                 composition_manager: Optional[CompositionManager] = None,
+                 **kwargs):
         """
         Initialize a symmetry-based structure generator.
         
@@ -628,7 +651,7 @@ class SymmetryBasedStructureGenerator(StructureGenerator):
             # Prepare elements and num_ions lists
             elements = []
             num_ions = []
-            for element, count in self.composition.items():
+            for element, count in self.get_composition().items():
                 elements.append(element)
                 num_ions.append(count)
             

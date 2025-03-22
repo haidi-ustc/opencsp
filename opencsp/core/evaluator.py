@@ -2,7 +2,7 @@ from typing import List, Callable, Optional, Any, Dict, Union, Type, TypeVar
 
 import numpy as np
 from monty.json import MSONable
-
+from opencsp.core.composition_manager import CompositionManager
 from opencsp.core.individual import Individual
 from opencsp.core.calculator import Calculator
 from opencsp.utils.logging import get_logger
